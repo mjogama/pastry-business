@@ -29,8 +29,12 @@ Open http://localhost:3000. The page shows **API connected** when the client can
 | `npm run dev`   | Run server and client together; Ctrl+C stops both     |
 | `npm run check` | Typecheck and lint both apps, and run the server tests |
 | `npm run imports` | Fix the import order in `server/src/` (`imports:check` only reports) |
+| `npm run module:create -- <name>` | Scaffold a server module and its shared types, and mount it (e.g. `blog-post` → `/api/v1/blog-posts`) |
+| `npm run module:remove -- <name>` | Delete a module, its shared types, tests and `client/features/<name>`, and unmount it (asks first; `--yes` skips) |
 
 ## Adding a feature
+
+`npm run module:create -- <name>` does steps 1 and 2 with a starter CRUD module; then edit its fields.
 
 1. Write its types in `shared/modules/<name>.ts`.
 2. Build the server module in `server/src/modules/<name>/` by copying `example/`, and mount it in `server/src/app/routes/v1/routes.ts`.
@@ -41,7 +45,7 @@ Step-by-step detail is in [AGENTS.md](AGENTS.md) and the server README.
 ## Starting a new project from this template
 
 1. Copy the repo and rename it; update `name` in the root, server and client `package.json` files.
-2. Delete the `example` module: `server/src/modules/example/`, its mount in `server/src/app/routes/v1/routes.ts`, `server/tests/example*.test.ts`, and `shared/modules/example.ts`.
+2. Delete the `example` module with `npm run module:remove -- example` (removes `server/src/modules/example/`, its mount in `server/src/app/routes/v1/routes.ts`, `server/tests/example*.test.ts`, and `shared/modules/example.ts`).
 3. Install a database driver: see [server/docs/DEPENDENCIES.md](server/docs/DEPENDENCIES.md).
 
 ## Working with AI agents

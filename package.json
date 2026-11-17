@@ -6,7 +6,9 @@
     "dev": "concurrently -k -n server,client -c blue,magenta \"npm --prefix server run dev\" \"pnpm --dir client dev\"",
     "check": "npm --prefix server run check && pnpm --dir client check",
     "imports": "node .claude/skills/sort-imports/sort-imports.mjs server",
-    "imports:check": "node .claude/skills/sort-imports/sort-imports.mjs server --check"
+    "imports:check": "node .claude/skills/sort-imports/sort-imports.mjs server --check",
+    "module:create": "node scripts/new-module.mjs",
+    "module:remove": "node scripts/remove-module.mjs"
   },
   "devDependencies": {
     "concurrently": "^10.0.7"
