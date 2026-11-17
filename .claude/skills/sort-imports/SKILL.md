@@ -19,11 +19,11 @@ import { type Env, env } from "./config/env";
 import { healthModule } from "@modules/health/health.module";
 ```
 
-- Group 1: npm packages and `node:` built-ins. Group 2: project files (tsconfig path aliases such as `@app/`, `@modules/`, `@shared/`, and `./` `../`).
-- Each group sorted shortest line to longest; equal lengths alphabetical.
+- Group 1: npm packages and `node:` built-ins. Group 2: project files (the path aliases in `server/tsconfig.json`, such as `@app/`, `@modules/`, `@shared/`, `@common/`, and `./` `../`).
+- Each group sorted shortest line to longest; equal lengths compared character by character.
 - One blank line between groups, no comments.
 - Side-effect imports such as `import "dotenv/config";` stay first in their original order, because they must run before anything else.
-- Only `server/src/`. Never touch `tests/` or config files; Biome sorts those.
+- Only `server/src/`. Never touch `tests/`, config files or `client/`; Biome sorts those.
 
 ## Steps
 

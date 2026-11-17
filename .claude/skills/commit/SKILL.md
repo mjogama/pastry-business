@@ -40,7 +40,7 @@ Flag only these. Do not comment on style or design.
 - secrets: API keys, tokens, passwords, private keys, connection strings with credentials
 - merge conflict markers: `<<<<<<<`, `=======`, `>>>>>>>`
 - leftover debugging: `console.log`, `debugger`, `it.only`, `describe.only`
-- a dependency added to `package.json` without a matching `package-lock.json` change, or the reverse
+- a dependency added to a `package.json` without a matching lockfile change (`package-lock.json` for root and `server/`, `pnpm-lock.yaml` for `client/`), or the reverse
 
 ## 3. Decide
 
@@ -53,11 +53,20 @@ Flag only these. Do not comment on style or design.
 
 ## 4. Commit
 
-Write a message from the diff:
+Write the message from the staged diff only, never from the conversation, earlier commits, or what you think was intended:
 
-- a subject line of at most 72 characters, imperative mood ("Add auth module", "Fix rate limit header")
+- a subject line of at most 72 characters, imperative mood ("Add auth module", "Fix rate limit header"), naming the main change
 - a blank line, then 1 to 5 short bullets when the change touches more than one area; omit them for a small change
 - end with the commit attribution trailer this session provides, if any
+
+Before committing, check the message against `git diff --cached --stat`:
+
+- every bullet (or the subject, if there are no bullets) points to at least one staged file
+- every staged area (each top-level folder or feature touched) is covered by the subject or a bullet
+- it says nothing about unstaged, untracked or deleted-but-unstaged work
+- it states what changed, not guesses about why (no "to improve performance" unless the diff shows it)
+
+If any check fails, rewrite the message before committing.
 
 Commit with a heredoc so the formatting survives:
 
