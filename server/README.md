@@ -1,124 +1,240 @@
 # Backend Node + Express + TypeScript Starter
 
-Reusable Express 5 + TypeScript backend template, structured as a **Modular Monolith**. Clone/copy this as the starting point for a new backend instead of re-installing and re-wiring the same baseline (Helmet, CORS, rate limiting, compression, logging, Zod env validation, centralized error/response handling, path aliases) every time.
+Reusable Express 5 + TypeScript backend template, structured as a **modular monolith** with class-based (OOP) feature modules. Everything outside `src/modules/` is plain functions. Copy it as the starting point for a new backend instead of re-wiring the same baseline every time.
 
-Deliberately **not** pre-installed — add per-project as needed, see [`docs/DEPENDENCIES.md`](docs/DEPENDENCIES.md): database driver (Mongoose/pg), request validators, cookie-parser, jsonwebtoken, nodemon.
+What you get out of the box:
 
-## Getting Started
+- Security and transport: Helmet, CORS (multiple origins), rate limiting, compression, body size limit
+- Zod-validated environment variables with a readable error on boot
+- Zod request validation (`validate()`) with typed handlers
+- One response envelope for success and errors, and a central error handler that never leaks internals
+- Structured logging (pino) with a request id on every request
+- Health and readiness endpoints, graceful shutdown
+- Tests (Vitest + Supertest), lint and format (Biome), Dockerfile
+
+Deliberately **not** pre-installed (database driver, auth packages): see [`docs/DEPENDENCIES.md`](docs/DEPENDENCIES.md).
+
+## Getting started
 
 ```bash
 npm install
-cp .env.example .env   # fill in real values
-npm run dev             # tsx watch mode
+cp .env.example .env   # fill in DB_URI and BASE_URL
+npm run dev
 ```
 
-### Environment variables
-
-Validated at boot by [`src/app/config/env.ts`](src/app/config/env.ts) via Zod — the process fails fast with a clear error if any are missing/invalid.
-
-| Variable   | Purpose                                          |
-| ---------- | ------------------------------------------------ |
-| `PORT`     | Port the HTTP server listens on                  |
-| `DB_URI`   | Database connection string (wire up your driver) |
-| `BASE_URL` | Allowed CORS origin                              |
+Requires Node 22 or newer (`.nvmrc` pins 24).
 
 ### npm scripts
 
-| Script          | Command                       | Purpose                                     |
-| --------------- | ----------------------------- | ------------------------------------------- |
-| `npm run dev`   | `tsx watch src/app/server.ts` | Local development with hot reload           |
-| `npm start`     | `tsx src/app/server.ts`       | Run without watch mode                      |
-| `npm run prod`  | `tsx src/app/server.ts`       | Run in production (executes TS directly)    |
-| `npm run build` | `tsc --noEmit`                | Type-check only — does **not** emit `dist/` |
+| Script               | Purpose                                                  |
+| -------------------- | -------------------------------------------------------- |
+| `npm run dev`        | Run from source with reload (`tsx watch`), pretty logs   |
+| `npm run build`      | Bundle to `dist/server.js` with tsup                     |
+| `npm start`          | Run the built bundle with Node (production)              |
+| `npm run typecheck`  | `tsc --noEmit`                                           |
+| `npm run lint`       | Biome lint + format check                                |
+| `npm run format`     | Biome lint fixes + format, written to disk               |
+| `npm test`           | Run the test suite once (`npm run test:watch` to watch)  |
+| `npm run check`      | typecheck + lint + test in one command                   |
 
-`tsx` executes TypeScript directly, so there is no compiled `dist/` artifact required to run the app. `dist/` is git-ignored; if you need real compiled output for deployment, change `build` to `tsc` (remove `--noEmit`) or add a bundler step.
+### Environment variables
 
-## Request Lifecycle / Procedure
+Validated at boot by [`src/app/config/env.ts`](src/app/config/env.ts). If anything is missing or invalid, the process prints which variable and why, then exits.
 
-`src/app/app.ts` wires middleware in this exact order — order matters in Express:
+| Variable               | Required | Default       | Purpose                                                           |
+| ---------------------- | -------- | ------------- | ----------------------------------------------------------------- |
+| `DB_URI`               | yes      |               | Database connection string (wire up your driver)                  |
+| `BASE_URL`             | yes      |               | Allowed CORS origin(s), comma-separated URLs                      |
+| `NODE_ENV`             | no       | `development` | `development`, `test` or `production`                             |
+| `HOST`                 | no       | `0.0.0.0`     | Interface to bind                                                 |
+| `PORT`                 | no       | `8001`        | Port to listen on                                                 |
+| `TRUST_PROXY`          | no       | `false`       | Express `trust proxy`. Set it (e.g. `1`) behind a load balancer   |
+| `LOG_LEVEL`            | no       | by `NODE_ENV` | `debug` in development, `info` in production, `silent` in tests   |
+| `BODY_LIMIT`           | no       | `100kb`       | Max JSON / urlencoded body size                                   |
+| `RATE_LIMIT_WINDOW_MS` | no       | `900000`      | Rate-limit window                                                 |
+| `RATE_LIMIT_MAX`       | no       | `100`         | Requests allowed per IP per window                                |
 
-1. `helmet()` — security headers
-2. `cors()` — origin restricted to `env.BASE_URL`
-3. `express.json()` / `express.urlencoded()` — body parsing (10mb limit)
-4. `compression()` — gzip responses
-5. `morgan("dev")` — request logging
-6. `limiter` — rate limiting (100 req / 15 min per IP)
-7. `registerRoutes(app)` — mounts versioned API routers (`/api/v1/...`)
-8. `errorPathHandler` — catch-all 404 for unmatched routes
-9. `globalErrorHandler` — centralized error formatter (**must stay last**)
+To add a variable, add it to the schema in `env.ts` and to `.env.example`. Always read config through `env`, never `process.env`.
 
-Route handlers throw/forward errors with `createAppError(message, statusCode)` or `errorHandler(message, statusCode)` from [`src/modules/utils/errorHandler.ts`](src/modules/utils/errorHandler.ts); `globalErrorHandler` turns them into a consistent JSON shape:
-
-```json
-{ "status": "Bad request", "statusCode": 400, "errMessage": "..." }
-```
-
-Successful responses use `responseHandler(res, statusCode, message, data)` from [`src/modules/utils/responseHandler.ts`](src/modules/utils/responseHandler.ts) for a consistent shape:
-
-```json
-{ "status": "OK", "statusCode": 200, "message": "...", "data": {} }
-```
-
-### Adding a new route/module
-
-1. Create a folder under `src/modules/<feature>/` (routes, controller, service, etc.).
-2. Export a `Router` from it.
-3. Mount it in [`src/app/routes/v1/routes.ts`](src/app/routes/v1/routes.ts) (or a new version folder under `src/app/routes/`).
-4. `src/app/routes/index.ts` → `registerRoutes` already wires `/api/v1` for you.
-
-## Folder Structure (Modular Monolith)
+## Folder structure
 
 ```
 server/
-├── .env / .env.example        # environment config (never commit real .env)
-├── package.json
-├── tsconfig.json               # path aliases: @app/*, @modules/*
-├── docs/
-│   └── DEPENDENCIES.md         # deps intentionally NOT pre-installed
+├── Dockerfile
+├── biome.json                  # lint + format
+├── tsup.config.ts              # production bundle
+├── vitest.config.ts            # tests (sets its own env, never reads .env)
+├── tsconfig.json               # path aliases: @app/*, @modules/*, @shared/*
+├── docs/DEPENDENCIES.md        # packages intentionally not pre-installed
+├── tests/                      # Supertest tests against createApp()
 └── src/
-    ├── app/                     # application shell — framework wiring, not business logic
-    │   ├── app.ts               # Express instance + middleware pipeline
-    │   ├── server.ts            # process entrypoint, starts the HTTP listener
-    │   ├── config/
-    │   │   └── env.ts           # Zod-validated environment variables
-    │   ├── constants/
-    │   │   └── STATUS_CODE.ts   # HTTP status code → title lookup
-    │   ├── middlewares/
-    │   │   ├── errorPathHandler.ts    # 404 catch-all
-    │   │   ├── globalErrorHandler.ts  # centralized error → JSON response
-    │   │   └── rateLimit.ts           # express-rate-limit config
-    │   ├── routes/
-    │   │   ├── index.ts         # registerRoutes(app) — mounts versioned routers
-    │   │   └── v1/
-    │   │       └── routes.ts    # /api/v1 router (add feature routers here)
-    │   └── types/
-    │       └── StatusCode.ts    # shared TS types for status codes
-    └── modules/                 # business/domain modules (the "monolith" bulk)
-        ├── index.ts             # barrel for feature modules
-        ├── helpers/             # use for application logic
-        └── utils/
-            ├── errorHandler.ts     # AppError class, createAppError/errorHandler
-            └── responseHandler.ts  # standard success response shape
+    ├── app/                    # application shell: wiring only, no business logic
+    │   ├── server.ts           # entrypoint: listen, graceful shutdown, process handlers
+    │   ├── app.ts              # createApp(): middleware pipeline
+    │   ├── config/env.ts       # Zod-validated environment
+    │   ├── middlewares/        # requestLogger, rateLimit, notFoundHandler, globalErrorHandler
+    │   └── routes/             # registerRoutes(app) -> /api/v1 -> feature routers
+    ├── shared/                 # reusable building blocks, imported by app/ and modules/
+    │   ├── errors/AppError.ts  # AppError + NotFoundError, ConflictError, ...
+    │   ├── http/response.ts    # sendSuccess() and the response envelope types
+    │   ├── middlewares/validate.ts
+    │   └── logger.ts
+    └── modules/                # one folder per business capability
+        ├── health/             # /health and /ready
+        └── example/            # reference module: copy it, then delete it
+            ├── example.schema.ts      # Zod schemas + types
+            ├── example.repository.ts  # ExampleRepository interface + implementation
+            ├── example.service.ts     # ExampleService: business rules
+            ├── example.controller.ts  # ExampleController: HTTP <-> service
+            ├── example.routes.ts      # ExampleRouter: paths + validation
+            └── example.module.ts      # ExampleModule: wires the classes together
 ```
 
-**Modular Monolith convention:** `src/app/` stays framework plumbing only (server bootstrapping, global middleware, routing table). Each business capability gets its own folder under `src/modules/<feature>/` with its own routes/controllers/services, imported into `src/app/routes/`. This keeps features independently movable (e.g. extractable into microservices later) while running as a single deployable process today.
+Dependency rule: `modules/` may import from `shared/`; `app/` may import from both; `shared/` never imports from `modules/` (it only reads `app/config/env`); modules do not import each other's internals. That keeps a feature movable.
 
-Path aliases (`tsconfig.json`): use `@app/*` and `@modules/*` instead of long relative imports (e.g. `import { env } from "@app/config/env"`).
+## Request lifecycle
 
-## Ecosystem Validation — Findings Fixed Before Push
+`createApp()` in [`src/app/app.ts`](src/app/app.ts) wires middleware in this order:
 
-I ran the app end-to-end (`npx tsc --noEmit`, boot the server, curl real endpoints) and found the following bugs, now fixed in this session:
+1. `requestLogger`: assigns `req.id` (reuses an incoming `X-Request-Id`), logs one line per request
+2. `helmet()`: security headers
+3. `cors()`: origins from `BASE_URL`
+4. `/health`, `/ready`: mounted before the rate limiter so probes are never limited
+5. rate limiter: before body parsing, so rejected requests cost nothing to parse
+6. `express.json()` / `express.urlencoded()`: limited to `BODY_LIMIT`
+7. `compression()`
+8. `registerRoutes(app)`: `/api/v1/...`
+9. `notFoundHandler`: 404 for unmatched routes
+10. `globalErrorHandler`: **must stay last**
 
-1. **Routes were never mounted (critical).** `app.ts` never called `registerRoutes(app)`, so `/api/v1/status` — and any future route — was unreachable; every request 404'd. Fixed by wiring `registerRoutes(app)` into the middleware pipeline.
-2. **Error handlers were registered before routes, and in reversed order (critical).** `globalErrorHandler` (which needs to be _last_) was added before `errorPathHandler`, and both were registered ahead of any routes. Since Express resolves error middleware based on registration order, thrown errors skipped `globalErrorHandler` entirely and fell through to Express's default HTML error page instead of the app's JSON error format. Fixed order is now: routes → `errorPathHandler` (404) → `globalErrorHandler` (last).
-3. **`cors()` origin referenced an unvalidated env var.** `origin: process.env.BASE_URL` read directly from `process.env` (bypassing the Zod-validated `env` object) and `BASE_URL` wasn't even declared in the schema or `.env`/`.env.example`, so CORS was silently misconfigured. Added `BASE_URL` to the Zod schema and both env files, and switched `app.ts` to use `env.BASE_URL`.
-4. **`.gitignore` didn't actually ignore macOS `.DS_Store` files.** It listed `DS_Store` (no leading dot), which doesn't match the real filename `.DS_Store`. Fixed, and also added `dist/` since build output shouldn't be committed for this run-via-`tsx` setup.
-5. **Unused duplicate dependency `express-rate-limiter`** (distinct from the actually-used `express-rate-limit`) was installed and listed in `package.json` with no references in source. Removed via `npm uninstall`.
+## Response shape
 
-Verified after fixes: `tsc --noEmit` passes clean, `GET /api/v1/status` returns `200` with the expected JSON body, and an unmatched route returns a proper `404` JSON error (not Express's default HTML page).
+Success, via `sendSuccess(res, { statusCode?, message?, data })`:
 
-### Still worth deciding before reuse
+```json
+{ "success": true, "statusCode": 201, "message": "Example created", "data": { "id": "..." } }
+```
 
-- `npm run build` only type-checks (`tsc --noEmit`); there's no real compiled-output pipeline. Fine for `tsx`-based deploys, but decide explicitly if a target environment needs a compiled `dist/` instead.
-- `DB_URI` is validated but no database client is wired up yet — intentional per `docs/DEPENDENCIES.md` (Mongoose/pg are opt-in per project).
-- `bcrypt`, `uuid`, `express-async-handler` are pre-installed but currently unused in source — intentional for a reusable starter, just be aware they add install weight to every clone.
+Error, produced only by `globalErrorHandler`:
+
+```json
+{
+  "success": false,
+  "statusCode": 400,
+  "status": "Bad Request",
+  "message": "Validation failed",
+  "details": [{ "path": "name", "message": "Invalid input: expected string, received undefined" }],
+  "requestId": "114b015b-4563-4eff-8d38-76fe5ed41513"
+}
+```
+
+## Errors
+
+Throw from anywhere (controller, service, async or not). Express 5 forwards it to the error handler, so no `try/catch` or async wrapper is needed.
+
+```ts
+import { ConflictError, NotFoundError } from "@shared/errors/AppError";
+
+if (!user) throw new NotFoundError("User not found");
+if (taken) throw new ConflictError("Email already in use", { field: "email" });
+```
+
+What the client sees:
+
+| Thrown                                   | Response                                              |
+| ---------------------------------------- | ----------------------------------------------------- |
+| `AppError` or a subclass                 | Its status code, message and `details`                |
+| `ZodError`                               | 400 `Validation failed` with per-field `details`      |
+| Express client errors (bad JSON, too big)| Their 4xx status and message                          |
+| Mongoose `ValidationError` / `CastError` | 400                                                   |
+| Anything else                            | 500 `Internal server error`; the real error is logged |
+
+Only `AppError` messages reach the client, so use it for anything the user should read.
+
+## Adding a feature module
+
+Every feature is a set of small classes, each with one job. Dependencies go in through the constructor, so nothing reaches for a global and every class can be tested alone.
+
+```
+Router -> Controller -> Service -> Repository
+```
+
+First write the feature's types in `../shared/modules/<feature>.ts` (see `../shared/README.md`); client and server both use them. Then copy `src/modules/example/` and rename it:
+
+| File                      | Class                              | Job                                                                 |
+| ------------------------- | ---------------------------------- | ------------------------------------------------------------------- |
+| `<feature>.schema.ts`     | (none)                             | Zod schemas per route, each ending `satisfies z.ZodType<SharedType>` |
+| `<feature>.repository.ts` | `UserRepository` (interface) + impl | Data access only                                                     |
+| `<feature>.service.ts`    | `UserService`                      | Business rules. No `req`/`res`; throws `AppError`s                   |
+| `<feature>.controller.ts` | `UserController`                   | Reads the validated request, calls the service, sends the response   |
+| `<feature>.routes.ts`     | `UserRouter`                       | Pairs each path with `validate(schemas)` and a controller method     |
+| `<feature>.module.ts`     | `UserModule`                       | Builds the classes and exposes `router`                              |
+
+```ts
+// users.service.ts
+export class UserService {
+  constructor(private readonly repository: UserRepository) {}
+
+  async getById(id: string) {
+    const user = await this.repository.findById(id);
+    if (!user) throw new NotFoundError("User not found");
+    return user;
+  }
+}
+
+// users.controller.ts
+export class UserController {
+  constructor(private readonly service: UserService) {}
+
+  // Arrow property, not a method: keeps `this` when the router calls it.
+  getById = async (req: ValidatedRequest<typeof getUserSchemas>, res: Response) => {
+    const user = await this.service.getById(req.params.id);
+    sendSuccess(res, { message: "User retrieved", data: user });
+  };
+}
+```
+
+Then mount it in [`src/app/routes/v1/routes.ts`](src/app/routes/v1/routes.ts) and add tests in `tests/`:
+
+```ts
+v1Router.use("/users", new UserModule().router);
+```
+
+Swapping storage means writing one class that implements the feature's repository interface and passing it in: `new UserModule({ repository: new MongoUserRepository() })`. The service and controller do not change.
+
+## Logging
+
+Use `req.log` inside a request (it carries the request id) and `logger` from `@shared/logger` elsewhere. `console.*` is flagged by the linter.
+
+```ts
+req.log.info({ userId }, "User created");
+```
+
+Output is pretty-printed in development and JSON lines in production. `Authorization` and `Cookie` headers are redacted.
+
+## Health checks and shutdown
+
+- `GET /health`: liveness. The process is up.
+- `GET /ready`: readiness. Runs every check registered with `healthModule.service.register(name, fn)` and returns 503 if one fails. Register your database there.
+
+On `SIGTERM` / `SIGINT` the server stops accepting connections, lets in-flight requests finish (10 s limit) and exits. Close database connections in the `shutdown` function in `src/app/server.ts`, before `process.exit`.
+
+## Production
+
+```bash
+npm run build && npm start
+# or
+docker build -t my-api .
+docker run --env-file .env -p 8001:8001 my-api
+```
+
+Before going live:
+
+- Set `TRUST_PROXY` if you are behind a load balancer, otherwise every client shares one rate-limit bucket.
+- The rate-limit store is in-memory per process. Use a shared store (see `docs/DEPENDENCIES.md`) when running several instances.
+
+## Using this template for a new project
+
+1. Copy the repo and set `name` in `package.json`.
+2. Delete `src/modules/example/`, its mount in `routes/v1/routes.ts`, `tests/example.test.ts` and `tests/example.service.test.ts`.
+3. Install your database driver, add its readiness check and shutdown hook.
