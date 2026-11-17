@@ -1,5 +1,5 @@
 {
-  "name": "fullstack-template",
+  "name": "fullstack-starter-express-next",
   "private": true,
   "scripts": {
     "setup": "npm --prefix server install && pnpm --dir client install",
