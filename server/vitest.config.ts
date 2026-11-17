@@ -1,0 +1,27 @@
+import { fileURLToPath } from "node:url";
+import { defineConfig } from "vitest/config";
+
+const dir = (path: string) => fileURLToPath(new URL(path, import.meta.url));
+
+export default defineConfig({
+  resolve: {
+    alias: {
+      "@app": dir("./src/app"),
+      "@modules": dir("./src/modules"),
+      "@shared": dir("./src/shared"),
+      "@common": dir("../shared"),
+    },
+  },
+  test: {
+    include: ["tests/**/*.test.ts"],
+    // Tests never read your real .env: these win over it.
+    env: {
+      NODE_ENV: "test",
+      PORT: "8001",
+      DB_URI: "test://localhost/test",
+      BASE_URL: "http://localhost:3000",
+      TRUST_PROXY: "false",
+      RATE_LIMIT_MAX: "100",
+    },
+  },
+});
