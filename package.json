@@ -1,5 +1,5 @@
 {
-  "name": "fullstack-starter-express-next",
+  "name": "pato-business",
   "private": true,
   "scripts": {
     "setup": "npm --prefix server install && pnpm --dir client install",

@@ -1,26 +1,421 @@
 @import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
+@custom-variant dark (&:is(.dark *));
+
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
+  --font-sans: var(--font-sans);
   --font-mono: var(--font-geist-mono);
+  --font-heading: var(--font-sans);
+  --color-sidebar-ring: var(--sidebar-ring);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar: var(--sidebar);
+  --color-chart-5: var(--chart-5);
+  --color-chart-4: var(--chart-4);
+  --color-chart-3: var(--chart-3);
+  --color-chart-2: var(--chart-2);
+  --color-chart-1: var(--chart-1);
+  --color-ring: var(--ring);
+  --color-input: var(--input);
+  --color-border: var(--border);
+  --color-destructive: var(--destructive);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-accent: var(--accent);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-muted: var(--muted);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-secondary: var(--secondary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary: var(--primary);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-popover: var(--popover);
+  --color-card-foreground: var(--card-foreground);
+  --color-card: var(--card);
+  --radius-sm: calc(var(--radius) * 0.6);
+  --radius-md: calc(var(--radius) * 0.8);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) * 1.4);
+  --radius-2xl: calc(var(--radius) * 1.8);
+  --radius-3xl: calc(var(--radius) * 2.2);
+  --radius-4xl: calc(var(--radius) * 2.6);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+/* ───────────────────────────────────────────────────────────────────────────
+ * Sales Tracker: "Dark Roast" (docs/SALES_TRACKET_UI_V1.md §5).
+ *
+ * Colors are a shadcn theme: the spec's palette is assigned to shadcn's semantic
+ * variables (see `:root:has(.theme-dark-roast)` below), so shadcn components render
+ * Dark Roast with their stock variants. Spec token → utility:
+ *   --bg → background · --text → foreground · --accent → primary · --on-accent →
+ *   primary-foreground · --surface-1 → muted · --surface-card → card ·
+ *   --surface-popover → popover · --surface-button → secondary · --line → border ·
+ *   --line-strong → input · --text-muted → muted-foreground · --danger-text →
+ *   destructive · focus ring → ring. The rest keep their own names below.
+ * Type, shape and spacing tokens are theme scales (`text-cell`, `rounded-card`…).
+ * New keys must also be added to `cn` in lib/utils.ts.
+ * ─────────────────────────────────────────────────────────────────────────── */
+@theme inline {
+  --color-surface-2: var(--surface-2);
+  --color-surface-inset: var(--surface-inset);
+  --color-surface-note: var(--surface-note);
+  --color-line-dashed: var(--line-dashed);
+  --color-foreground-2: var(--foreground-2);
+  --color-foreground-faint: var(--foreground-faint);
+  --color-foreground-outside: var(--foreground-outside);
+  --color-danger-line: var(--danger-line);
+  --color-danger-bg: var(--danger-bg);
+  --color-danger-alert-text: var(--danger-alert-text);
+  --color-holiday-bg: var(--holiday-bg);
+  --color-holiday-text: var(--holiday-text);
+  --color-scrim: var(--scrim);
+  --color-scrim-strong: var(--scrim-strong);
+
+  /* Business Menu additions (docs/MENU_UI_V1.md §5) */
+  --color-surface-product: var(--surface-product);
+  --color-img-placeholder: var(--img-placeholder);
+  --color-footer: var(--footer-bg);
+  --color-status-available: var(--status-available);
+  --color-status-out: var(--status-out);
+  --color-badge-sale: var(--badge-sale-bg);
+  --color-badge-sale-foreground: var(--badge-sale-text);
+  --color-chip-save: var(--chip-save-bg);
+
+  /* §5.2 Fraunces is loaded on <html> in app/layout.tsx; Inter is shadcn's --font-sans. */
+  --font-display: var(--font-fraunces), Georgia, serif;
+}
+
+/* `static` keeps every token on :root even when no utility uses it
+ * (the page-padding and touch-target utilities read some directly). */
+@theme static {
+  /* §5.2 Typography */
+  --text-display: 44px; /* month title, month revenue amount */
+  --text-display--line-height: 1.05;
+  --text-display-fluid: clamp(28px, 6vw, 44px);
+  --text-display-fluid--line-height: 1.05;
+  --text-amount-fluid: clamp(32px, 8vw, 44px);
+  --text-amount-fluid--line-height: 1.05;
+  --text-heading: 24px; /* side panel date */
+  --text-entry-title: 22px; /* popover title input */
+  --text-sum: 20px; /* popover total, desktop 🦆 */
+  --text-sum-sm: 18px; /* panel day total, tablet 🦆 */
+  --text-body-lg: 16px;
+  --text-cell: 15px; /* cell title, cell total, day number, pill button */
+  --text-cell--line-height: 1.25;
+  --text-body: 14px;
+  --text-label: 13px;
+  --text-label-sm: 12px;
+  --text-micro: 11px;
+  --text-nano: 10px;
+
+  /* The reference prototype never sets line-height, so its text uses the browser's "normal". */
+  --leading-prototype: normal;
+
+  --tracking-display: -0.5px;
+  --tracking-label: 0.3px;
+  --tracking-time: 0.4px;
+
+  /* §5.3 Shape */
+  --radius-pill: 999px;
+  --radius-popover: 22px;
+  --radius-revenue: 24px; /* month revenue card on tablet and phone (§8.6) */
+  --radius-card: 14px;
+  --radius-control: 10px;
+  --radius-tag: 6px;
+
+  --shadow-popover: 0 24px 60px rgb(0 0 0 / 0.55);
+
+  /* §5.3 Spacing */
+  --spacing-page-top: 20px;
+  --spacing-page-x: 24px;
+  --spacing-page-bottom: 32px;
+  --spacing-section: 18px;
+  --spacing-touch: 44px;
+  --spacing-cell: 138px; /* day cell height, desktop and wide (§7.3) */
+  --spacing-cell-compact: 112px; /* phone + tablet; phones override §8.2's shorter cell so days are easy to tap and hold */
+  --spacing-revenue-w: 537px; /* month revenue pill (§7.5) */
+  --spacing-revenue-h: 106px;
+  --spacing-drawer: min(460px, 100%); /* day detail panel (§7.6) */
+  --spacing-drawer-tablet: min(420px, 60vw); /* §8.4 */
+  --spacing-popover: min(440px, calc(100vw - 24px)); /* entry popover (§7.7) */
+  --spacing-arrow: 18px;
+
+  /* §8 Breakpoints: phone < sm (640) ≤ tablet < lg (1024) ≤ desktop < wide (1440) */
+  --breakpoint-rows: 35rem; /* 560px: product rows switch from mini cards to the 5-column grid */
+  --breakpoint-wide: 90rem; /* 1440px */
+  --container-content: 1600px;
+
+  /* ── Business Menu (docs/MENU_UI_V1.md §5). Sizes that already exist above are reused:
+   * 22 entry-title (top bar name) · 20 sum (footer name) · 18 sum-sm (tagline, pick price) ·
+   * 16 body-lg · 15 cell (chips, sheet description) · 14 body · 13 label · 12 label-sm. */
+  --text-hero: clamp(44px, 7vw, 84px);
+  --text-hero--line-height: 1.02;
+  --text-menu-title: clamp(40px, 6vw, 60px);
+  --text-menu-title--line-height: 1.05;
+  --text-picks-title: clamp(28px, 4vw, 40px);
+  --text-section: clamp(26px, 3.6vw, 34px);
+  --text-sheet-title: 30px; /* sheet product name and sheet final price */
+  --text-sheet-title--line-height: 1.15;
+  --text-card-title: 17px; /* card title, CTA, sheet struck price */
+  --text-card-price: 19px;
+
+  --leading-card: 1.45; /* card description */
+  --leading-tagline: 1.6;
+  --leading-description: 1.65; /* sheet description */
+  --leading-tight: 1.2; /* footer call pill */
+
+  --tracking-hero: -1px;
+  --tracking-menu-title: -0.8px;
+  --tracking-eyebrow: 1.6px;
+  --tracking-eyebrow-sm: 1.4px;
+  --tracking-badge: 0.6px;
+
+  --radius-product: 20px;
+  --radius-hero: 28px;
+  --radius-sheet: 24px;
+  --radius-sheet-image: 16px;
+
+  --spacing-landing-section: 72px;
+  --spacing-page-end: 64px; /* page bottom padding */
+  --spacing-cta: 52px;
+  --spacing-call: 50px;
+  --spacing-footer-call: 48px;
+  --spacing-sheet: min(560px, calc(100vw - 32px));
+  --spacing-sheet-inset: 14px;
+  --spacing-card-min: 250px;
+  --spacing-pick-min: 240px;
+  --container-menu: 1280px;
+
+  --animate-hold: hold-fill 1s linear forwards; /* the cell sets the real duration from HOLD_MS */
+
+  @keyframes hold-fill {
+    from {
+      transform: scaleX(0);
+    }
+    to {
+      transform: scaleX(1);
+    }
   }
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+/* Extends a shorter button's hit area to the 44px minimum touch target (§5.3, §9). */
+@utility touch-target {
+  position: relative;
+  &::before {
+    content: "";
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    width: max(100%, var(--spacing-touch));
+    height: max(100%, var(--spacing-touch));
+    transform: translate(-50%, -50%);
+  }
+}
+
+@utility tabular {
+  font-variant-numeric: tabular-nums;
+}
+
+/* Page padding (§5.3) plus the device's safe areas (§8.7). */
+@utility page-padding {
+  padding: calc(var(--spacing-page-top) + env(safe-area-inset-top))
+    calc(var(--spacing-page-x) + env(safe-area-inset-right)) calc(var(--spacing-page-bottom) + env(safe-area-inset-bottom))
+    calc(var(--spacing-page-x) + env(safe-area-inset-left));
+}
+
+/* Day cells: no text selection, no iOS callout, no double-tap zoom (§7.4). */
+@utility hold-surface {
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+
+:root {
+  --background: oklch(1 0 0);
+  --foreground: oklch(0.145 0 0);
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.145 0 0);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.145 0 0);
+  --primary: oklch(0.205 0 0);
+  --primary-foreground: oklch(0.985 0 0);
+  --secondary: oklch(0.97 0 0);
+  --secondary-foreground: oklch(0.205 0 0);
+  --muted: oklch(0.97 0 0);
+  --muted-foreground: oklch(0.556 0 0);
+  --accent: oklch(0.97 0 0);
+  --accent-foreground: oklch(0.205 0 0);
+  --destructive: oklch(0.577 0.245 27.325);
+  --border: oklch(0.922 0 0);
+  --input: oklch(0.922 0 0);
+  --ring: oklch(0.708 0 0);
+  --chart-1: oklch(0.87 0 0);
+  --chart-2: oklch(0.556 0 0);
+  --chart-3: oklch(0.439 0 0);
+  --chart-4: oklch(0.371 0 0);
+  --chart-5: oklch(0.269 0 0);
+  --radius: 0.625rem;
+  --sidebar: oklch(0.985 0 0);
+  --sidebar-foreground: oklch(0.145 0 0);
+  --sidebar-primary: oklch(0.205 0 0);
+  --sidebar-primary-foreground: oklch(0.985 0 0);
+  --sidebar-accent: oklch(0.97 0 0);
+  --sidebar-accent-foreground: oklch(0.205 0 0);
+  --sidebar-border: oklch(0.922 0 0);
+  --sidebar-ring: oklch(0.708 0 0);
+}
+
+.dark {
+  --background: oklch(0.145 0 0);
+  --foreground: oklch(0.985 0 0);
+  --card: oklch(0.205 0 0);
+  --card-foreground: oklch(0.985 0 0);
+  --popover: oklch(0.205 0 0);
+  --popover-foreground: oklch(0.985 0 0);
+  --primary: oklch(0.922 0 0);
+  --primary-foreground: oklch(0.205 0 0);
+  --secondary: oklch(0.269 0 0);
+  --secondary-foreground: oklch(0.985 0 0);
+  --muted: oklch(0.269 0 0);
+  --muted-foreground: oklch(0.708 0 0);
+  --accent: oklch(0.269 0 0);
+  --accent-foreground: oklch(0.985 0 0);
+  --destructive: oklch(0.704 0.191 22.216);
+  --border: oklch(1 0 0 / 10%);
+  --input: oklch(1 0 0 / 15%);
+  --ring: oklch(0.556 0 0);
+  --chart-1: oklch(0.87 0 0);
+  --chart-2: oklch(0.556 0 0);
+  --chart-3: oklch(0.439 0 0);
+  --chart-4: oklch(0.371 0 0);
+  --chart-5: oklch(0.269 0 0);
+  --sidebar: oklch(0.205 0 0);
+  --sidebar-foreground: oklch(0.985 0 0);
+  --sidebar-primary: oklch(0.488 0.243 264.376);
+  --sidebar-primary-foreground: oklch(0.985 0 0);
+  --sidebar-accent: oklch(0.269 0 0);
+  --sidebar-accent-foreground: oklch(0.985 0 0);
+  --sidebar-border: oklch(1 0 0 / 10%);
+  --sidebar-ring: oklch(0.556 0 0);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+  button:not(:disabled), [role="button"]:not(:disabled) {
+    cursor: pointer;
+  }
+  html {
+    @apply font-sans;
+  }
+}
+
+
+/* Dark Roast (§5.1) as a shadcn theme. It applies to the whole document while the tracker is
+ * mounted, so overlays that shadcn portals into <body> get it too. */
+:root:has(.theme-dark-roast) {
+  color-scheme: dark;
+  --background: #1c1511;
+  --foreground: #f3e9dc;
+  --card: #352920;
+  --card-foreground: #f3e9dc;
+  --popover: #2b211b;
+  --popover-foreground: #f3e9dc;
+  --primary: #e8b04a;
+  --primary-foreground: #241b16;
+  --secondary: #3a2c23;
+  --secondary-foreground: #f3e9dc;
+  --muted: #2a201a;
+  --muted-foreground: #b9a796;
+  --accent: #3a2c23;
+  --accent-foreground: #f3e9dc;
+  --destructive: #f0a391;
+  --border: #3a2c23;
+  --input: #4a392d;
+  --ring: #e8b04a;
+  --radius: 10px;
+
+  /* Spec tokens with no shadcn equivalent */
+  --surface-2: #261d17;
+  --surface-inset: #241b16;
+  --surface-note: #1f1712;
+  --line-dashed: #5a4536;
+  --foreground-2: #cdbba9;
+  --foreground-faint: #8e7c6e;
+  --foreground-outside: #7a685b;
+  /* Not in §5.1: the prototype's border for the side panel's outlined Delete button. */
+  --danger-line: #6b3a2e;
+  --danger-bg: #3a1f18;
+  --danger-alert-text: #f7b7a6;
+  --holiday-bg: #3e4a33;
+  --holiday-text: #dce6d0;
+  --scrim: rgb(10 6 4 / 0.55);
+  --scrim-strong: rgb(10 6 4 / 0.6);
+
+  /* Business Menu (docs/MENU_UI_V1.md §5) */
+  --surface-product: #241b16;
+  --img-placeholder: #2f241e;
+  --footer-bg: #181210;
+  --status-available: #9ccb8e;
+  --status-out: #a8968a;
+  --badge-sale-bg: var(--primary);
+  --badge-sale-text: var(--primary-foreground);
+  --chip-save-bg: #3a2c23;
+}
+
+/* Business Menu: the 24px side padding of the 1280px container plus the side safe areas (§5, §8). */
+@utility menu-gutter {
+  padding-left: calc(var(--spacing-page-x) + env(safe-area-inset-left));
+  padding-right: calc(var(--spacing-page-x) + env(safe-area-inset-right));
+}
+
+/* Pulls a full-bleed bar (the sticky chips) out over the gutter. */
+@utility menu-bleed {
+  margin-left: calc(-1 * (var(--spacing-page-x) + env(safe-area-inset-left)));
+  margin-right: calc(-1 * (var(--spacing-page-x) + env(safe-area-inset-right)));
+}
+
+/* Business Menu: horizontally scrolling chip row with the scrollbar hidden (§7.2). */
+@utility scrollbar-none {
+  scrollbar-width: none;
+  &::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+/* §5.3 focus ring: 2px solid, 2px offset; popover fields draw it inset. shadcn's default is a
+ * 3px translucent ring, so the theme swaps it for every shadcn control, menu chip and link. */
+:root:has(.theme-dark-roast) :is([data-slot="button"], [data-slot="day-cell"], [data-slot="toggle-group-item"], a):focus-visible {
+  --tw-ring-shadow: 0 0 #0000;
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
+}
+
+:root:has(.theme-dark-roast) :is([data-slot="input"], [data-slot="textarea"]):focus {
+  --tw-ring-shadow: 0 0 #0000;
+  outline: none;
+  box-shadow: inset 0 0 0 2px var(--ring);
+}
+
+/* §8.7: overlays open and close without motion when the user asks for less.
+ * The hold bar is not a [data-slot] element, so it keeps showing progress. */
+@media (prefers-reduced-motion: reduce) {
+  :root:has(.theme-dark-roast) [data-slot] {
+    animation: none !important;
+    transition: none !important;
+  }
 }

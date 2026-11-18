@@ -10,7 +10,10 @@ export interface ApiError extends Error {
   fieldErrors: Record<string, string>;
 }
 
-const toFieldErrors = (details: unknown): Record<string, string> => (Array.isArray(details) ? Object.fromEntries((details as FieldError[]).map((error) => [error.path, error.message])) : {});
+const toFieldErrors = (details: unknown): Record<string, string> =>
+  Array.isArray(details)
+    ? Object.fromEntries((details as FieldError[]).map((error) => [error.path, error.message]))
+    : {};
 
 const createApiError = (message: string, statusCode: number, details?: unknown, requestId?: string): ApiError =>
   Object.assign(new Error(message), {
