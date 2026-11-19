@@ -89,6 +89,15 @@
   --color-badge-sale-foreground: var(--badge-sale-text);
   --color-chip-save: var(--chip-save-bg);
 
+  /* Recipe Book additions (docs/RECIPIES_UI_V1.md §5) */
+  --color-surface-spine: var(--surface-spine);
+  --color-surface-chip: var(--surface-chip);
+  --color-surface-new-card: var(--surface-new-card);
+  --color-surface-icon-tile: var(--surface-icon-tile);
+  --color-foreground-ingredient: var(--text-ingredient);
+  --color-scrim-modal: var(--scrim-modal);
+  --color-line-active: var(--card-border-active);
+
   /* §5.2 Fraunces is loaded on <html> in app/layout.tsx; Inter is shadcn's --font-sans. */
   --font-display: var(--font-fraunces), Georgia, serif;
 }
@@ -193,6 +202,12 @@
   --spacing-card-min: 250px;
   --spacing-pick-min: 240px;
   --container-menu: 1280px;
+
+  /* Recipe Book (docs/RECIPIES_UI_V1.md §5) */
+  --radius-book: 22px;
+  --shadow-card-active: 0 26px 60px rgb(0 0 0 / 0.55);
+  --shadow-card-side: 0 12px 30px rgb(0 0 0 / 0.35);
+  --shadow-modal: 0 30px 80px rgb(0 0 0 / 0.6);
 
   --animate-hold: hold-fill 1s linear forwards; /* the cell sets the real duration from HOLD_MS */
 
@@ -375,6 +390,15 @@
   --badge-sale-bg: var(--primary);
   --badge-sale-text: var(--primary-foreground);
   --chip-save-bg: #3a2c23;
+
+  /* Recipe Book (docs/RECIPIES_UI_V1.md §5) */
+  --surface-spine: #1f1712;
+  --surface-chip: #33271f;
+  --surface-new-card: #221a15;
+  --surface-icon-tile: #352920;
+  --text-ingredient: #eadbc8;
+  --scrim-modal: rgb(10 6 4 / 0.7);
+  --card-border-active: #5a4536;
 }
 
 /* Business Menu: the 24px side padding of the 1280px container plus the side safe areas (§5, §8). */

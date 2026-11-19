@@ -17,6 +17,8 @@ const buttonVariants = cva(
         destructive:
           "bg-destructive/10 text-destructive hover:bg-destructive/20 focus-visible:border-destructive/40 focus-visible:ring-destructive/20 dark:bg-destructive/20 dark:hover:bg-destructive/30 dark:focus-visible:ring-destructive/40",
         link: "text-primary underline-offset-4 hover:underline",
+        /** Recipe Book carousel card and page dot (docs/RECIPIES_UI_V1.md): bare, styled by the caller. */
+        bare: "h-auto rounded-none p-0 text-foreground active:not-aria-[haspopup]:translate-y-0",
         /* Business Menu (docs/MENU_UI_V1.md) */
         /** Top bar Menu / Home pill: `--surface-1` (§6). */
         nav: "bg-muted text-foreground hover:bg-[color-mix(in_oklch,var(--muted),var(--foreground)_5%)]",

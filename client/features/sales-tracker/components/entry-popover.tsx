@@ -9,6 +9,7 @@ import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { Drawer, DrawerContent, DrawerSwipeHandle, DrawerTitle } from "@/components/ui/drawer";
 import { Label } from "@/components/ui/label";
 import { Popover, PopoverArrow, PopoverContent, PopoverTitle } from "@/components/ui/popover";
+import { newId } from "@/lib/id";
 import { cn } from "@/lib/utils";
 import { readNow } from "../hooks/use-environment";
 import { formatEntryDateTime } from "../lib/dates";
@@ -43,7 +44,7 @@ interface Draft {
   rows: DraftRow[];
 }
 
-const newRow = (): DraftRow => ({ key: crypto.randomUUID(), name: "", price: "", qty: "1", autoPrice: false });
+const newRow = (): DraftRow => ({ key: newId(), name: "", price: "", qty: "1", autoPrice: false });
 
 const initialDraft = (request: EntryRequest): Draft =>
   request.mode === "create"
@@ -53,7 +54,7 @@ const initialDraft = (request: EntryRequest): Draft =>
         title: request.entry.title,
         note: request.entry.note,
         rows: request.entry.items.map((item) => ({
-          key: crypto.randomUUID(),
+          key: newId(),
           name: item.productName,
           price: String(item.price),
           qty: String(item.quantity),

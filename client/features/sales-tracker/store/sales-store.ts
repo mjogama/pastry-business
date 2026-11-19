@@ -1,6 +1,7 @@
 "use client";
 
 import { useSyncExternalStore } from "react";
+import { newId } from "@/lib/id";
 import { entryValidationError, firstEntryError, normalizeEntryInput } from "../lib/validation";
 import type { LocalDateTime, ProductSuggestion, SalesEntry, SalesEntryInput } from "../types";
 
@@ -82,7 +83,7 @@ const validated = (input: SalesEntryInput, now: LocalDateTime) => {
 
 export const createEntry = (input: SalesEntryInput, now: LocalDateTime): SalesEntry => {
   const stamp = new Date().toISOString();
-  const entry: SalesEntry = { id: crypto.randomUUID(), ...validated(input, now), createdAt: stamp, updatedAt: stamp };
+  const entry: SalesEntry = { id: newId(), ...validated(input, now), createdAt: stamp, updatedAt: stamp };
   write([...getSnapshot(), entry]);
   return entry;
 };
