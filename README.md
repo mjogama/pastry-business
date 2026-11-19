@@ -56,4 +56,4 @@ Claude Code skills in `.claude/skills/`:
 
 - `/write-module-tests <module>`: writes the tests for a server module
 - `/sort-imports`: orders imports in `server/src/`
-- `/commit`: reviews staged changes and commits
+- `/commit`: reviews staged changes, commits, publishes the branch to origin and switches back to `main`

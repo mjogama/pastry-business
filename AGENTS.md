@@ -35,12 +35,12 @@ Read this instead of exploring the repo. It maps every part you normally need. O
 │   ├── http.ts            response envelope types
 │   └── modules/<name>.ts  one contract file per server module
 ├── scripts/               new-module.mjs, remove-module.mjs (share module-names.mjs)
-└── .claude/skills/        /write-module-tests, /sort-imports, /commit
+└── .claude/skills/        /write-module-tests, /sort-imports, /clean-comments, /commit
 ```
 
 ## Commands
 
-From the root: `npm run setup` (install both), `npm run dev` (run both), `npm run check` (typecheck, lint, server tests for both), `npm run imports` (fix import order in `server/src/`; `imports:check` reports only), `npm run module:create -- <name>` (scaffold steps 1–3 below from `scripts/new-module.mjs`; singular name, route is the kebab plural), `npm run module:remove -- <name> [--yes]` (deletes the module, its shared file, tests and client feature, and unmounts it; agents must pass `--yes` since there's no terminal to confirm in, and only when the user asked for the removal).
+From the root: `npm run setup` (install both), `npm run dev` (run both), `npm run check` (typecheck, lint, server tests for both), `npm run imports` (fix import order in `server/src/`; `imports:check` reports only), `npm run comments:clean` (remove comments on lines added since HEAD; `-- --check` lists only), `npm run module:create -- <name>` (scaffold steps 1–3 below from `scripts/new-module.mjs`; singular name, route is the kebab plural), `npm run module:remove -- <name> [--yes]` (deletes the module, its shared file, tests and client feature, and unmounts it; agents must pass `--yes` since there's no terminal to confirm in, and only when the user asked for the removal).
 
 Per app: `server/` uses `npm run <script>`, `client/` uses `pnpm <script>`. Server: `dev`, `build`, `start`, `typecheck`, `lint`, `format`, `test`, `check`. Client: `dev`, `build`, `start`, `typecheck`, `lint`, `format`, `check`.
 

@@ -1,12 +1,12 @@
 ---
 name: commit
-description: Review all changed files, flag anything that should not be committed, then commit everything on the current branch. Only run when the user calls /commit.
+description: Review all changed files, flag anything that should not be committed, commit everything on the current branch, then publish that branch to origin and switch back to main. Only run when the user calls /commit.
 disable-model-invocation: true
 ---
 
 # Commit all changes
 
-Be brief. No narration between steps. Do not push.
+Be brief. No narration between steps. Push only in step 5, and never to `main`.
 
 ## 1. Stage and look
 
@@ -78,4 +78,23 @@ EOF
 
 If a pre-commit hook fails, show its output and stop. Do not retry with `--no-verify`.
 
-Reply with one line: the short hash and the subject.
+## 5. Publish and switch to main
+
+Get the branch name:
+
+```bash
+git branch --show-current
+```
+
+**On `main` (or detached, empty output):** do not push or switch. Reply with one line, the short hash and the subject, plus "(on main, not published)", and stop.
+
+**On any other branch:** publish it and set its upstream, then switch back:
+
+```bash
+git push -u origin <branch> && git switch main
+```
+
+- If the push fails (auth, rejected, no network), show its output and stop on the branch. Do not force-push and do not switch.
+- If the switch fails, show its output and stop; the branch is already published.
+
+Reply with two lines: the short hash and the subject, then `Published <branch> to origin, now on main.`

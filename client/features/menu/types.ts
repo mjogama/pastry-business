@@ -1,55 +1,14 @@
-/** Business Menu domain (docs/MENU_UI_V1.md §3). Derived values live in `ProductView`, never here. */
+/**
+ * Business Menu domain (docs/MENU_UI_V1.md §3). The API contracts live in `shared/modules/{category,product,menu}.ts`.
+ * The view types below are client-only: derived values live in `ProductView`, never in the stored types.
+ */
 
-/** `YYYY-MM-DD`, a calendar date in Asia/Manila. */
-export type DateKey = string;
+import type { Category } from "@common/modules/category";
+import type { DateKey } from "@common/modules/product";
 
-export interface Category {
-  id: string;
-  /** Unique. */
-  name: string;
-  sortOrder: number;
-}
-
-export interface Product {
-  id: string;
-  /** 1–60 characters. */
-  name: string;
-  categoryId: Category["id"];
-  /** ≤ 120 characters, shown on cards. */
-  shortDescription: string;
-  /** Detail sheet; falls back to `shortDescription`. */
-  description?: string;
-  /** Placeholder when empty. */
-  imageUrl?: string;
-  /** PHP, > 0. */
-  price: number;
-  /** PHP, > 0 and < price. */
-  discountPrice?: number;
-  /** Last sale day (Manila). No date = runs until removed. */
-  discountEndsAt?: DateKey;
-  isAvailable: boolean;
-  /** "Today's picks". */
-  isFeatured: boolean;
-  /** Within its category. */
-  sortOrder: number;
-  /** Hidden everywhere. */
-  isArchived: boolean;
-}
-
-/** Single row. */
-export interface BusinessSettings {
-  businessName: string;
-  tagline: string;
-  /** E.164, e.g. `+639170000000`. Shown in the local format. */
-  contactNumber: string;
-  heroImageUrl?: string;
-}
-
-export interface MenuData {
-  settings: BusinessSettings;
-  categories: Category[];
-  products: Product[];
-}
+export type { Category } from "@common/modules/category";
+export type { BusinessSettings, MenuData } from "@common/modules/menu";
+export type { DateKey, Product } from "@common/modules/product";
 
 /** A product as the customer UI shows it, with the derived prices (§3) for one day. */
 export interface ProductView {

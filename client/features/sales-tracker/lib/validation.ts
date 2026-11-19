@@ -1,4 +1,4 @@
-import type { LocalDateTime, SalesEntryInput } from "../types";
+import type { CreateSalesEntryInput, LocalDateTime } from "../types";
 import { isLocalDateTime } from "./dates";
 
 export const TITLE_MAX_LENGTH = 60;
@@ -9,7 +9,7 @@ export const TITLE_MAX_LENGTH = 60;
  * The form calls it before saving and the store calls it again before writing,
  * so the rule holds wherever an entry comes from.
  */
-export const firstEntryError = (input: SalesEntryInput, now: LocalDateTime): string | null => {
+export const firstEntryError = (input: CreateSalesEntryInput, now: LocalDateTime): string | null => {
   if (!isLocalDateTime(input.date)) return "Please pick a date and time.";
   if (input.date > now) return "The date can’t be in the future.";
 
@@ -28,7 +28,7 @@ export const firstEntryError = (input: SalesEntryInput, now: LocalDateTime): str
 };
 
 /** Trims text fields the same way on every write. */
-export const normalizeEntryInput = (input: SalesEntryInput): SalesEntryInput => ({
+export const normalizeEntryInput = (input: CreateSalesEntryInput): CreateSalesEntryInput => ({
   date: input.date,
   title: input.title.trim(),
   note: input.note.trim(),
