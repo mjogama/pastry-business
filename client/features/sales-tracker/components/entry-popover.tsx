@@ -16,7 +16,7 @@ import { formatEntryDateTime } from "../lib/dates";
 import { lineRevenue, sumMoney } from "../lib/money";
 import { firstEntryError, isEntryValidationError, TITLE_MAX_LENGTH } from "../lib/validation";
 import { createEntry, deleteEntry, updateEntry } from "../store/sales-store";
-import type { LocalDateTime, ProductSuggestion, SalesEntry, SalesEntryInput } from "../types";
+import type { CreateSalesEntryInput, LocalDateTime, ProductSuggestion, SalesEntry } from "../types";
 import { DangerButton, PrimaryButton, SecondaryButton, TextButton } from "./ui/buttons";
 import { Money, PopoverField, PopoverTextArea, scrimProps } from "./ui/primitives";
 
@@ -64,7 +64,7 @@ const initialDraft = (request: EntryRequest): Draft =>
 
 const toNumber = (value: string) => (value.trim() === "" ? Number.NaN : Number(value));
 
-const toInput = (draft: Draft): SalesEntryInput => ({
+const toInput = (draft: Draft): CreateSalesEntryInput => ({
   date: draft.date,
   title: draft.title,
   note: draft.note,

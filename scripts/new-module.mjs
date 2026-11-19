@@ -21,9 +21,10 @@ if (n.Name === n.Names) fail(`"${rawName}" has the same singular and plural form
 const moduleDir = join(serverDir, "src/modules", n.kebab);
 const sharedFile = join(root, "shared/modules", `${n.kebab}.ts`);
 
-for (const path of [moduleDir, sharedFile]) {
-  if (existsSync(path)) fail(`${relative(root, path)} already exists. Nothing was written.`);
-}
+if (existsSync(moduleDir)) fail(`${relative(root, moduleDir)} already exists. Nothing was written.`);
+
+// A contract written ahead of the server (e.g. from the client) is kept, not overwritten.
+const keepSharedFile = existsSync(sharedFile);
 
 const routes = readFileSync(routesFile, "utf8");
 if (routes.includes(`"/${n.kebabs}"`)) fail(`Route "/${n.kebabs}" is already mounted in routes.ts.`);
@@ -222,6 +223,7 @@ lines.splice(anchor + 1, 0, useLine);
 // ---------- write ----------
 
 mkdirSync(moduleDir, { recursive: true });
+if (keepSharedFile) delete files[sharedFile];
 for (const [path, content] of Object.entries(files)) writeFileSync(path, content);
 writeFileSync(routesFile, lines.join("\n"));
 
@@ -230,4 +232,5 @@ execFileSync("node", [join(root, ".claude/skills/sort-imports/sort-imports.mjs")
 console.log(`Created module "${n.kebab}" at /api/v1/${n.kebabs}:`);
 for (const path of Object.keys(files)) console.log(`  + ${relative(root, path)}`);
 console.log(`  ~ ${relative(root, routesFile)}`);
+if (keepSharedFile) console.log(`  = ${relative(root, sharedFile)} (kept, already existed)`);
 console.log(`\nNext: edit the fields in shared/modules/${n.kebab}.ts and ${n.kebab}.schema.ts, then /write-module-tests ${n.kebab}.`);

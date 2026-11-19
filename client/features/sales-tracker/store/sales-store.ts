@@ -3,7 +3,7 @@
 import { useSyncExternalStore } from "react";
 import { newId } from "@/lib/id";
 import { entryValidationError, firstEntryError, normalizeEntryInput } from "../lib/validation";
-import type { LocalDateTime, ProductSuggestion, SalesEntry, SalesEntryInput } from "../types";
+import type { CreateSalesEntryInput, LocalDateTime, ProductSuggestion, SalesEntry } from "../types";
 
 /**
  * Client-side entry store. The server has no sales module yet, so entries live in this
@@ -74,21 +74,21 @@ const subscribe = (listener: () => void) => {
   };
 };
 
-const validated = (input: SalesEntryInput, now: LocalDateTime) => {
+const validated = (input: CreateSalesEntryInput, now: LocalDateTime) => {
   const normalized = normalizeEntryInput(input);
   const error = firstEntryError(normalized, now);
   if (error) throw entryValidationError(error);
   return normalized;
 };
 
-export const createEntry = (input: SalesEntryInput, now: LocalDateTime): SalesEntry => {
+export const createEntry = (input: CreateSalesEntryInput, now: LocalDateTime): SalesEntry => {
   const stamp = new Date().toISOString();
   const entry: SalesEntry = { id: newId(), ...validated(input, now), createdAt: stamp, updatedAt: stamp };
   write([...getSnapshot(), entry]);
   return entry;
 };
 
-export const updateEntry = (id: string, input: SalesEntryInput, now: LocalDateTime): SalesEntry => {
+export const updateEntry = (id: string, input: CreateSalesEntryInput, now: LocalDateTime): SalesEntry => {
   const current = getSnapshot().find((entry) => entry.id === id);
   if (!current) throw entryValidationError("This entry no longer exists.");
   const entry: SalesEntry = { ...current, ...validated(input, now), updatedAt: new Date().toISOString() };
