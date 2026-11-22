@@ -5,7 +5,7 @@ import { RecipeBookLoader } from "@/features/recipes/components/recipe-book-load
 
 export const metadata: Metadata = { title: "Recipe Book · Pato's Pâtisserie" };
 
-export default function RecipiesPage() {
+export default function RecipesPage() {
   return (
     <Suspense
       fallback={
