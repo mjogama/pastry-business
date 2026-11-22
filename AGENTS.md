@@ -29,7 +29,7 @@ Read this instead of exploring the repo. It maps every part you normally need. O
 │   ├── components/        shared UI (api-status.tsx)
 │   ├── features/<name>/   client side of a server module (create when needed)
 │   └── lib/
-│       ├── env.ts         Zod-validated NEXT_PUBLIC_ env
+│       ├── env.ts         Zod-validated env (SERVER_API, inlined via next.config.ts)
 │       └── api/client.ts  api.get/post/put/patch/delete, isApiError
 ├── shared/                types only, imported as @common/* by both apps
 │   ├── http.ts            response envelope types

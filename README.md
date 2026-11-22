@@ -2,11 +2,11 @@
 
 A starting point for full-stack TypeScript projects: an Express 5 API, a Next.js 16 client, and one folder of types both of them share.
 
-| Folder    | What it is                                                     | Docs                                   |
-| --------- | -------------------------------------------------------------- | -------------------------------------- |
-| `server/` | Express 5 API: validation, errors, logging, tests, Docker      | [server/README.md](server/README.md)   |
-| `client/` | Next.js 16 App Router + Tailwind 4 with a typed API client     | [client/README.md](client/README.md)   |
-| `shared/` | Types used by both apps, so a module's contract is written once | [shared/README.md](shared/README.md)   |
+| Folder    | What it is                                                      | Docs                                 |
+| --------- | --------------------------------------------------------------- | ------------------------------------ |
+| `server/` | Express 5 API: validation, errors, logging, tests, Docker       | [server/README.md](server/README.md) |
+| `client/` | Next.js 16 App Router + Tailwind 4 with a typed API client      | [client/README.md](client/README.md) |
+| `shared/` | Types used by both apps, so a module's contract is written once | [shared/README.md](shared/README.md) |
 
 ## Getting started
 
@@ -14,7 +14,7 @@ Requires Node 22+, npm and pnpm.
 
 ```bash
 npm run setup                          # install server and client
-cp server/.env.example server/.env     # fill in DB_URI and BASE_URL
+cp server/.env.example server/.env     # fill in DATABASE_URL and BASE_URL
 cp client/.env.example client/.env.local
 npm run dev                            # start both
 ```
@@ -23,13 +23,13 @@ Open http://localhost:3000. The page shows **API connected** when the client can
 
 ## Commands
 
-| Command         | What it does                                          |
-| --------------- | ----------------------------------------------------- |
-| `npm run setup` | Install dependencies for both apps                    |
-| `npm run dev`   | Run server and client together; Ctrl+C stops both     |
-| `npm run check` | Typecheck and lint both apps, and run the server tests |
-| `npm run imports` | Fix the import order in `server/src/` (`imports:check` only reports) |
-| `npm run module:create -- <name>` | Scaffold a server module and its shared types, and mount it (e.g. `blog-post` → `/api/v1/blog-posts`) |
+| Command                           | What it does                                                                                                      |
+| --------------------------------- | ----------------------------------------------------------------------------------------------------------------- |
+| `npm run setup`                   | Install dependencies for both apps                                                                                |
+| `npm run dev`                     | Run server and client together; Ctrl+C stops both                                                                 |
+| `npm run check`                   | Typecheck and lint both apps, and run the server tests                                                            |
+| `npm run imports`                 | Fix the import order in `server/src/` (`imports:check` only reports)                                              |
+| `npm run module:create -- <name>` | Scaffold a server module and its shared types, and mount it (e.g. `blog-post` → `/api/v1/blog-posts`)             |
 | `npm run module:remove -- <name>` | Delete a module, its shared types, tests and `client/features/<name>`, and unmount it (asks first; `--yes` skips) |
 
 ## Adding a feature

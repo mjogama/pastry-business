@@ -1,0 +1,116 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum IngredientUnit {
+  mg
+  g
+  tsp
+  tbsp
+  c
+  pc
+}
+
+/// shared/modules/recipes.ts `Recipe`.
+model Recipe {
+  id          String          @id @default(uuid(7))
+  name        String          @db.VarChar(60)
+  category    String
+  quantity    Int?
+  /// Free text, e.g. "2 hr 30 min".
+  time        String?
+  /// shared/modules/recipes.ts `Temperature`: { unit: "°C" | "°F", value: number }.
+  temperature Json?
+  description String?
+  note        String?
+  sections    RecipeSection[]
+  steps       RecipeStep[]
+  createdAt   DateTime        @default(now()) @db.Timestamptz(3)
+  updatedAt   DateTime        @updatedAt @db.Timestamptz(3)
+
+  @@index([category])
+  @@map("recipes")
+}
+
+/// An ingredient group such as "Dough". A null `name` is a plain list with no heading.
+model RecipeSection {
+  id          String             @id @default(uuid(7))
+  recipeId    String
+  recipe      Recipe             @relation(fields: [recipeId], references: [id], onDelete: Cascade)
+  position    Int
+  name        String?
+  ingredients RecipeIngredient[]
+
+  @@unique([recipeId, position])
+  @@map("recipe_sections")
+}
+
+/// shared/modules/recipes.ts `Ingredient`.
+model RecipeIngredient {
+  id              String         @id @default(uuid(7))
+  sectionId       String
+  section         RecipeSection  @relation(fields: [sectionId], references: [id], onDelete: Cascade)
+  position        Int
+  quantity        Float
+  unit            IngredientUnit @default(g)
+  ingredient_name String
+
+  @@unique([sectionId, position])
+  @@map("recipe_ingredients")
+}
+
+model RecipeStep {
+  id       String          @id @default(uuid(7))
+  recipeId String
+  recipe   Recipe          @relation(fields: [recipeId], references: [id], onDelete: Cascade)
+  position Int
+  text     String
+  tags     RecipeStepTag[]
+
+  @@unique([recipeId, position])
+  @@map("recipe_steps")
+}
+
+/// shared/modules/recipes.ts `StepTag`.
+model RecipeStepTag {
+  id          String     @id @default(uuid(7))
+  stepId      String
+  step        RecipeStep @relation(fields: [stepId], references: [id], onDelete: Cascade)
+  position    Int
+  description String?
+
+  @@unique([stepId, position])
+  @@map("recipe_step_tags")
+}
+
+model SalesEntry {
+  id        String      @id @default(uuid(7))
+  date      DateTime    @db.Timestamp(0)
+  title     String      @db.VarChar(60)
+  items     SalesItem[]
+  note      String      @default("")
+  createdAt DateTime    @default(now()) @db.Timestamptz(3)
+  updatedAt DateTime    @updatedAt @db.Timestamptz(3)
+
+  @@index([date])
+  @@map("sales_entries")
+}
+
+model SalesItem {
+  id           String     @id @default(uuid(7))
+  salesEntryId String
+  salesEntry   SalesEntry @relation(fields: [salesEntryId], references: [id], onDelete: Cascade)
+  position     Int
+  productName  String
+  price        Decimal    @db.Decimal(10, 2)
+  quantity     Int
+
+  @@unique([salesEntryId, position])
+  @@index([productName])
+  @@map("sales_items")
+}

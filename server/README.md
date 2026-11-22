@@ -18,7 +18,7 @@ Deliberately **not** pre-installed (database driver, auth packages): see [`docs/
 
 ```bash
 npm install
-cp .env.example .env   # fill in DB_URI and BASE_URL
+cp .env.example .env   # fill in DATABASE_URL and BASE_URL
 npm run dev
 ```
 
@@ -26,33 +26,33 @@ Requires Node 22 or newer (`.nvmrc` pins 24).
 
 ### npm scripts
 
-| Script               | Purpose                                                  |
-| -------------------- | -------------------------------------------------------- |
-| `npm run dev`        | Run from source with reload (`tsx watch`), pretty logs   |
-| `npm run build`      | Bundle to `dist/server.js` with tsup                     |
-| `npm start`          | Run the built bundle with Node (production)              |
-| `npm run typecheck`  | `tsc --noEmit`                                           |
-| `npm run lint`       | Biome lint + format check                                |
-| `npm run format`     | Biome lint fixes + format, written to disk               |
-| `npm test`           | Run the test suite once (`npm run test:watch` to watch)  |
-| `npm run check`      | typecheck + lint + test in one command                   |
+| Script              | Purpose                                                 |
+| ------------------- | ------------------------------------------------------- |
+| `npm run dev`       | Run from source with reload (`tsx watch`), pretty logs  |
+| `npm run build`     | Bundle to `dist/server.js` with tsup                    |
+| `npm start`         | Run the built bundle with Node (production)             |
+| `npm run typecheck` | `tsc --noEmit`                                          |
+| `npm run lint`      | Biome lint + format check                               |
+| `npm run format`    | Biome lint fixes + format, written to disk              |
+| `npm test`          | Run the test suite once (`npm run test:watch` to watch) |
+| `npm run check`     | typecheck + lint + test in one command                  |
 
 ### Environment variables
 
 Validated at boot by [`src/app/config/env.ts`](src/app/config/env.ts). If anything is missing or invalid, the process prints which variable and why, then exits.
 
-| Variable               | Required | Default       | Purpose                                                           |
-| ---------------------- | -------- | ------------- | ----------------------------------------------------------------- |
-| `DB_URI`               | yes      |               | Database connection string (wire up your driver)                  |
-| `BASE_URL`             | yes      |               | Allowed CORS origin(s), comma-separated URLs                      |
-| `NODE_ENV`             | no       | `development` | `development`, `test` or `production`                             |
-| `HOST`                 | no       | `0.0.0.0`     | Interface to bind                                                 |
-| `PORT`                 | no       | `8001`        | Port to listen on                                                 |
-| `TRUST_PROXY`          | no       | `false`       | Express `trust proxy`. Set it (e.g. `1`) behind a load balancer   |
-| `LOG_LEVEL`            | no       | by `NODE_ENV` | `debug` in development, `info` in production, `silent` in tests   |
-| `BODY_LIMIT`           | no       | `100kb`       | Max JSON / urlencoded body size                                   |
-| `RATE_LIMIT_WINDOW_MS` | no       | `900000`      | Rate-limit window                                                 |
-| `RATE_LIMIT_MAX`       | no       | `100`         | Requests allowed per IP per window                                |
+| Variable               | Required | Default       | Purpose                                                         |
+| ---------------------- | -------- | ------------- | --------------------------------------------------------------- |
+| `DATABASE_URL`         | yes      |               | Database connection string (wire up your driver)                |
+| `BASE_URL`             | yes      |               | Allowed CORS origin(s), comma-separated URLs                    |
+| `NODE_ENV`             | no       | `development` | `development`, `test` or `production`                           |
+| `HOST`                 | no       | `0.0.0.0`     | Interface to bind                                               |
+| `PORT`                 | no       | `8001`        | Port to listen on                                               |
+| `TRUST_PROXY`          | no       | `false`       | Express `trust proxy`. Set it (e.g. `1`) behind a load balancer |
+| `LOG_LEVEL`            | no       | by `NODE_ENV` | `debug` in development, `info` in production, `silent` in tests |
+| `BODY_LIMIT`           | no       | `100kb`       | Max JSON / urlencoded body size                                 |
+| `RATE_LIMIT_WINDOW_MS` | no       | `900000`      | Rate-limit window                                               |
+| `RATE_LIMIT_MAX`       | no       | `100`         | Requests allowed per IP per window                              |
 
 To add a variable, add it to the schema in `env.ts` and to `.env.example`. Always read config through `env`, never `process.env`.
 
@@ -141,13 +141,13 @@ if (taken) throw new ConflictError("Email already in use", { field: "email" });
 
 What the client sees:
 
-| Thrown                                   | Response                                              |
-| ---------------------------------------- | ----------------------------------------------------- |
-| `AppError` or a subclass                 | Its status code, message and `details`                |
-| `ZodError`                               | 400 `Validation failed` with per-field `details`      |
-| Express client errors (bad JSON, too big)| Their 4xx status and message                          |
-| Mongoose `ValidationError` / `CastError` | 400                                                   |
-| Anything else                            | 500 `Internal server error`; the real error is logged |
+| Thrown                                    | Response                                              |
+| ----------------------------------------- | ----------------------------------------------------- |
+| `AppError` or a subclass                  | Its status code, message and `details`                |
+| `ZodError`                                | 400 `Validation failed` with per-field `details`      |
+| Express client errors (bad JSON, too big) | Their 4xx status and message                          |
+| Mongoose `ValidationError` / `CastError`  | 400                                                   |
+| Anything else                             | 500 `Internal server error`; the real error is logged |
 
 Only `AppError` messages reach the client, so use it for anything the user should read.
 
@@ -161,14 +161,14 @@ Router -> Controller -> Service -> Repository
 
 First write the feature's types in `../shared/modules/<feature>.ts` (see `../shared/README.md`); client and server both use them. Then copy `src/modules/example/` and rename it:
 
-| File                      | Class                              | Job                                                                 |
-| ------------------------- | ---------------------------------- | ------------------------------------------------------------------- |
-| `<feature>.schema.ts`     | (none)                             | Zod schemas per route, each ending `satisfies z.ZodType<SharedType>` |
+| File                      | Class                               | Job                                                                  |
+| ------------------------- | ----------------------------------- | -------------------------------------------------------------------- |
+| `<feature>.schema.ts`     | (none)                              | Zod schemas per route, each ending `satisfies z.ZodType<SharedType>` |
 | `<feature>.repository.ts` | `UserRepository` (interface) + impl | Data access only                                                     |
-| `<feature>.service.ts`    | `UserService`                      | Business rules. No `req`/`res`; throws `AppError`s                   |
-| `<feature>.controller.ts` | `UserController`                   | Reads the validated request, calls the service, sends the response   |
-| `<feature>.routes.ts`     | `UserRouter`                       | Pairs each path with `validate(schemas)` and a controller method     |
-| `<feature>.module.ts`     | `UserModule`                       | Builds the classes and exposes `router`                              |
+| `<feature>.service.ts`    | `UserService`                       | Business rules. No `req`/`res`; throws `AppError`s                   |
+| `<feature>.controller.ts` | `UserController`                    | Reads the validated request, calls the service, sends the response   |
+| `<feature>.routes.ts`     | `UserRouter`                        | Pairs each path with `validate(schemas)` and a controller method     |
+| `<feature>.module.ts`     | `UserModule`                        | Builds the classes and exposes `router`                              |
 
 ```ts
 // users.service.ts
