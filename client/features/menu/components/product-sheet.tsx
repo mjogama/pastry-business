@@ -84,7 +84,7 @@ const SheetBody = ({
       </Button>
     </div>
     <div className="flex flex-col gap-3.5 px-6 pt-5 pb-6">
-      <span className="text-label-sm font-bold tracking-eyebrow-sm text-primary uppercase">{product.categoryName}</span>
+      <span className="text-label-sm font-bold tracking-eyebrow-sm text-honey uppercase">{product.categoryName}</span>
       <Title className="font-display text-sheet-title font-bold text-foreground">{product.name}</Title>
       <AvailabilityTag isAvailable={product.isAvailable} size="sheet" />
       <div className="flex flex-col gap-1.5 rounded-card border border-dashed border-input bg-surface-note px-4 py-3.5">
@@ -95,7 +95,7 @@ const SheetBody = ({
               <Money amount={product.price} />
             </s>
           )}
-          <Money amount={product.finalPrice} className="text-sheet-title font-bold whitespace-nowrap text-primary" />
+          <Money amount={product.finalPrice} className="text-sheet-title font-bold whitespace-nowrap text-honey" />
         </span>
         {product.isOnSale && (
           <span className="tabular text-label text-foreground-2">

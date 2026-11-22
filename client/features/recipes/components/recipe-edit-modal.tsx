@@ -377,7 +377,7 @@ function EditForm({
                   value={details.quantity}
                   placeholder="12"
                   onChange={(e) => setDetails((d) => ({ ...d, quantity: toIntegerInput(e.target.value) }))}
-                  className={cn(INPUT, "font-semibold text-primary tabular")}
+                  className={cn(INPUT, "font-semibold text-honey tabular")}
                 />
               </Field>
             </div>
@@ -413,7 +413,7 @@ function EditForm({
                   value={row.name}
                   placeholder="Section name, e.g. Dough"
                   onChange={(e) => updateRow(row.key, { name: e.target.value })}
-                  className={cn(INPUT, "h-9 flex-1 border-dashed border-input bg-transparent font-bold text-primary")}
+                  className={cn(INPUT, "h-9 flex-1 border-dashed border-input bg-transparent font-bold text-honey")}
                 />
                 <Button
                   type="button"
@@ -457,7 +457,7 @@ function EditForm({
                   value={row.quantity}
                   placeholder="0"
                   onChange={(e) => updateRow(row.key, { quantity: toNumberInput(e.target.value) })}
-                  className={cn(INPUT, "w-16 shrink-0 px-2 text-center font-semibold text-primary tabular")}
+                  className={cn(INPUT, "w-16 shrink-0 px-2 text-center font-semibold text-honey tabular")}
                 />
                 <NativeSelect
                   aria-label={`Ingredient ${i + 1} unit`}
@@ -555,7 +555,7 @@ function EditForm({
                 {st.tags.map((tag, t) => (
                   <span
                     key={tag.description}
-                    className="flex items-center gap-1 rounded-pill bg-primary/15 py-0.5 pr-1 pl-2.5 text-label-sm font-semibold text-primary"
+                    className="flex items-center gap-1 rounded-pill bg-primary/15 py-0.5 pr-1 pl-2.5 text-label-sm font-semibold text-honey"
                   >
                     {tag.description}
                     <Button
@@ -564,7 +564,7 @@ function EditForm({
                       size="icon"
                       aria-label={`Remove ${tag.description ?? "tag"} from step ${i + 1}`}
                       onClick={() => updateStep(st.key, { tags: st.tags.filter((_, j) => j !== t) })}
-                      className="size-5 rounded-full p-0 text-primary"
+                      className="size-5 rounded-full p-0 text-honey"
                     >
                       <XIcon className="size-3" />
                     </Button>

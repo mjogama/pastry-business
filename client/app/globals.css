@@ -97,6 +97,8 @@
   --color-foreground-ingredient: var(--text-ingredient);
   --color-scrim-modal: var(--scrim-modal);
   --color-line-active: var(--card-border-active);
+  --color-surface-ghost: var(--surface-ghost);
+  --color-honey: var(--honey);
 
   /* §5.2 Fraunces is loaded on <html> in app/layout.tsx; Inter is shadcn's --font-sans. */
   --font-display: var(--font-fraunces), Georgia, serif;
@@ -140,7 +142,7 @@
   --radius-control: 10px;
   --radius-tag: 6px;
 
-  --shadow-popover: 0 24px 60px rgb(0 0 0 / 0.55);
+  --shadow-popover: var(--elev-popover); /* per theme, see the theme blocks */
 
   /* §5.3 Spacing */
   --spacing-page-top: 20px;
@@ -205,9 +207,9 @@
 
   /* Recipe Book (docs/RECIPIES_UI_V1.md §5) */
   --radius-book: 22px;
-  --shadow-card-active: 0 26px 60px rgb(0 0 0 / 0.55);
-  --shadow-card-side: 0 12px 30px rgb(0 0 0 / 0.35);
-  --shadow-modal: 0 30px 80px rgb(0 0 0 / 0.6);
+  --shadow-card-active: var(--elev-card-active);
+  --shadow-card-side: var(--elev-card-side);
+  --shadow-modal: var(--elev-modal);
 
   --animate-hold: hold-fill 1s linear forwards; /* the cell sets the real duration from HOLD_MS */
 
@@ -344,34 +346,34 @@
  * mounted, so overlays that shadcn portals into <body> get it too. */
 :root:has(.theme-dark-roast) {
   color-scheme: dark;
-  --background: #1c1511;
-  --foreground: #f3e9dc;
-  --card: #352920;
-  --card-foreground: #f3e9dc;
-  --popover: #2b211b;
-  --popover-foreground: #f3e9dc;
-  --primary: #e8b04a;
-  --primary-foreground: #241b16;
-  --secondary: #3a2c23;
-  --secondary-foreground: #f3e9dc;
-  --muted: #2a201a;
-  --muted-foreground: #b9a796;
-  --accent: #3a2c23;
-  --accent-foreground: #f3e9dc;
+  --background: #1b1610;
+  --foreground: #f7eedb;
+  --card: #352a1c;
+  --card-foreground: #f7eedb;
+  --popover: #2a2118;
+  --popover-foreground: #f7eedb;
+  --primary: #f6c945;
+  --primary-foreground: #231c13;
+  --secondary: #3c3022;
+  --secondary-foreground: #f7eedb;
+  --muted: #2a2219;
+  --muted-foreground: #bfac8f;
+  --accent: #3c3022;
+  --accent-foreground: #f7eedb;
   --destructive: #f0a391;
-  --border: #3a2c23;
-  --input: #4a392d;
-  --ring: #e8b04a;
+  --border: #3c3022;
+  --input: #4c3d2a;
+  --ring: #f6c945;
   --radius: 10px;
 
   /* Spec tokens with no shadcn equivalent */
-  --surface-2: #261d17;
-  --surface-inset: #241b16;
-  --surface-note: #1f1712;
-  --line-dashed: #5a4536;
-  --foreground-2: #cdbba9;
-  --foreground-faint: #8e7c6e;
-  --foreground-outside: #7a685b;
+  --surface-2: #261e15;
+  --surface-inset: #231c13;
+  --surface-note: #1f1811;
+  --line-dashed: #5d4a32;
+  --foreground-2: #d4c2a4;
+  --foreground-faint: #948268;
+  --foreground-outside: #7e6d56;
   /* Not in §5.1: the prototype's border for the side panel's outlined Delete button. */
   --danger-line: #6b3a2e;
   --danger-bg: #3a1f18;
@@ -382,23 +384,97 @@
   --scrim-strong: rgb(10 6 4 / 0.6);
 
   /* Business Menu (docs/MENU_UI_V1.md §5) */
-  --surface-product: #241b16;
-  --img-placeholder: #2f241e;
-  --footer-bg: #181210;
+  --surface-product: #231c13;
+  --img-placeholder: #30261b;
+  --footer-bg: #17130d;
   --status-available: #9ccb8e;
   --status-out: #a8968a;
   --badge-sale-bg: var(--primary);
   --badge-sale-text: var(--primary-foreground);
-  --chip-save-bg: #3a2c23;
+  --chip-save-bg: #3c3022;
 
   /* Recipe Book (docs/RECIPIES_UI_V1.md §5) */
-  --surface-spine: #1f1712;
-  --surface-chip: #33271f;
-  --surface-new-card: #221a15;
-  --surface-icon-tile: #352920;
-  --text-ingredient: #eadbc8;
+  --surface-spine: #1f1811;
+  --surface-chip: #362b1d;
+  --surface-new-card: #221b13;
+  --surface-icon-tile: #352a1c;
+  --text-ingredient: #efe1c5;
   --scrim-modal: rgb(10 6 4 / 0.7);
-  --card-border-active: #5a4536;
+  --card-border-active: #5d4a32;
+  --surface-ghost: #2a2219;
+  --honey: var(--primary);
+  --card-dim: 1;
+
+  --elev-popover: 0 24px 60px rgb(0 0 0 / 0.55);
+  --elev-card-active: 0 26px 60px rgb(0 0 0 / 0.55);
+  --elev-card-side: 0 12px 30px rgb(0 0 0 / 0.35);
+  --elev-modal: 0 30px 80px rgb(0 0 0 / 0.6);
+}
+
+/* "Butter Yellow", the light theme and the default (docs/COLOR_THEME_V1.md). Dark Roast above
+ * applies only when <html data-theme="dark"> (set by the theme toggle, components/theme-toggle.tsx);
+ * otherwise this block overrides it: the extra :not() makes it more specific.
+ * Yellow is for fills only: yellow-family text uses --honey (text-honey), text on yellow is cocoa. */
+:root:not([data-theme="dark"]):has(.theme-dark-roast) {
+  color-scheme: light;
+  --background: #fff8ec; /* page */
+  --foreground: #3b2416; /* cocoa */
+  --card: #ffffff;
+  --card-foreground: #3b2416;
+  --popover: #ffffff;
+  --popover-foreground: #3b2416;
+  --primary: #f2b705; /* yellow */
+  --primary-foreground: #3b2416;
+  --secondary: #fbebcb; /* dough */
+  --secondary-foreground: #3b2416;
+  --muted: #fbf1de;
+  --muted-foreground: #7a5c45; /* crust */
+  --accent: #fbebcb;
+  --accent-foreground: #3b2416;
+  --destructive: #a8402b;
+  --border: #ead9bf;
+  --input: #e3cfae; /* dot */
+  --ring: #8a5a00; /* honey: yellow is too faint for a focus ring on cream */
+
+  --surface-2: #fffdf8;
+  --surface-inset: #fff8ec;
+  --surface-note: #fbf1de;
+  --line-dashed: #d9c3a0;
+  --foreground-2: #5a3f2c;
+  --foreground-faint: #7a5c45;
+  --foreground-outside: #a08a73;
+  --danger-line: #e6b5a8;
+  --danger-bg: #fbe7e1;
+  --danger-alert-text: #9c3a26;
+  --scrim: rgb(59 36 22 / 0.35);
+  --scrim-strong: rgb(59 36 22 / 0.4);
+  --holiday-bg: #e4eed9;
+  --holiday-text: #2f5a26;
+
+  /* Business Menu */
+  --surface-product: #ffffff;
+  --img-placeholder: #fbebcb;
+  --footer-bg: #fbf1de;
+  --status-available: #2f6b2a;
+  --status-out: #7a6a5e;
+  --chip-save-bg: #fbebcb;
+
+  --honey: #8a5a00;
+  --surface-spine: #fbf1de;
+  --surface-chip: #fbebcb;
+  --surface-new-card: #fbf1de;
+  --surface-icon-tile: #fbebcb;
+  --surface-ghost: #fffdf8;
+  --text-ingredient: #3b2416;
+  --scrim-modal: rgb(59 36 22 / 0.45);
+  --card-border-active: #d9c3a0;
+  /* Side cards fade by opacity; darkening white cards would turn them grey. */
+  --card-dim: 0.15;
+
+  --elev-popover: 0 20px 50px rgb(59 36 22 / 0.16);
+  --elev-card-active: none;
+  --elev-card-side: none;
+  --elev-modal: 0 30px 80px rgb(59 36 22 / 0.22);
 }
 
 /* Business Menu: the 24px side padding of the 1280px container plus the side safe areas (§5, §8). */

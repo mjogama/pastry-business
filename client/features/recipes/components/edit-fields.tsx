@@ -39,7 +39,7 @@ export function Field({
           {label}
         </Label>
         {required && (
-          <span aria-hidden="true" className="text-label-sm leading-none text-primary">
+          <span aria-hidden="true" className="text-label-sm leading-none text-honey">
             •
           </span>
         )}
@@ -76,7 +76,7 @@ export function UnitField<U extends string>({
         value={value}
         placeholder={placeholder}
         onChange={(e) => onValueChange(toNumberInput(e.target.value))}
-        className={cn(INPUT, "min-w-0 flex-1 rounded-r-none font-semibold text-primary tabular")}
+        className={cn(INPUT, "min-w-0 flex-1 rounded-r-none font-semibold text-honey tabular")}
       />
       <NativeSelect
         aria-label={`${id} unit`}

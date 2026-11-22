@@ -27,7 +27,7 @@ export const PriceBlock = ({
     )}
     <Money
       amount={product.finalPrice}
-      className={cn("font-bold whitespace-nowrap text-primary", variant === "card" ? "text-card-price" : "text-sum-sm")}
+      className={cn("font-bold whitespace-nowrap text-honey", variant === "card" ? "text-card-price" : "text-sum-sm")}
     />
     {product.isOnSale && variant === "card" && (
       <Badge variant="save" className="self-center">

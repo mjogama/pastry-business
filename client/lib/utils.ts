@@ -62,6 +62,8 @@ export const cn = createCn({
         "foreground-ingredient",
         "scrim-modal",
         "line-active",
+        "surface-ghost",
+        "honey",
       ],
       font: ["display"],
       leading: ["prototype", "card", "tagline", "description", "tight"],

@@ -2,6 +2,7 @@
 
 import type { Recipe } from "@common/modules/recipes";
 import { useEffect, useRef, useState } from "react";
+import { ThemeToggle } from "@/components/theme-toggle";
 import { Button } from "@/components/ui/button";
 import { newId } from "@/lib/id";
 import { cn } from "@/lib/utils";
@@ -139,7 +140,8 @@ export function RecipeBook({ initialRecipes }: { initialRecipes: Recipe[] | null
   };
 
   return (
-    <main className="flex min-h-0 flex-1 flex-col justify-center overflow-hidden pt-3 pb-1">
+    <main className="relative flex min-h-0 flex-1 flex-col justify-center overflow-hidden pt-3 pb-1">
+      <ThemeToggle className="absolute top-3 right-4 z-10" />
       <h1 className="px-6 text-center font-display text-[length:clamp(28px,min(6vw,6dvh),52px)] leading-[1.1] font-bold tracking-[-0.6px]">
         Recipe Book
       </h1>
@@ -192,7 +194,7 @@ export function RecipeBook({ initialRecipes }: { initialRecipes: Recipe[] | null
               style={{
                 transform: `translate(-50%,-50%) translateX(calc(var(--stride) * ${g.x})) scale(${g.scale}) rotate(${g.rotate}deg)`,
                 opacity: g.opacity,
-                filter: `brightness(${g.brightness})`,
+                filter: `brightness(calc(1 - ${1 - g.brightness} * var(--card-dim)))`,
                 zIndex: g.zIndex,
                 pointerEvents: g.hidden ? "none" : undefined,
                 transition: dragging
@@ -202,17 +204,18 @@ export function RecipeBook({ initialRecipes }: { initialRecipes: Recipe[] | null
               className={cn(
                 "absolute top-1/2 left-1/2 flex h-(--ch) w-(--cw) overflow-hidden rounded-book border text-foreground motion-reduce:transition-none!",
                 isActive ? "border-line-active shadow-card-active" : "border-border shadow-card-side",
+                !isNewCard && (isActive ? "bg-card" : "bg-surface-ghost"),
                 isNewCard
                   ? "flex-col items-center justify-center gap-3 border-2 border-dashed bg-surface-new-card"
-                  : "bg-muted",
+                  : undefined,
               )}
             >
               {recipe ? (
                 <BookCardFront recipe={recipe} cw={cw} ch={ch} multiplier={multipliers[recipe.id] ?? 1} />
               ) : (
                 <>
-                  <PlusIcon className="size-14 text-foreground" />
-                  <span className="text-cell font-semibold text-foreground-2">New recipe</span>
+                  <PlusIcon className="size-14 text-muted-foreground" />
+                  <span className="text-cell font-semibold text-muted-foreground">New recipe</span>
                 </>
               )}
             </Button>

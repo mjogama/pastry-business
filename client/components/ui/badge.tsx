@@ -14,7 +14,7 @@ const badgeVariants = cva(
           "bg-destructive/10 text-destructive focus-visible:ring-destructive/20 dark:bg-destructive/20 dark:focus-visible:ring-destructive/40 [a]:hover:bg-destructive/20",
         outline: "border-border text-foreground [a]:hover:bg-muted [a]:hover:text-muted-foreground",
         ghost: "hover:bg-muted hover:text-muted-foreground dark:hover:bg-muted/50",
-        link: "text-primary underline-offset-4 hover:underline",
+        link: "text-honey underline-offset-4 hover:underline",
         /** SALE pill (docs/MENU_UI_V1.md §6): 12/700, tracking 0.6px. */
         sale: "h-auto rounded-pill bg-badge-sale px-2.5 py-1.25 text-label-sm font-bold tracking-badge text-badge-sale-foreground",
         /** "Save ₱16" chip (§6): wraps as one piece, never splits. */
