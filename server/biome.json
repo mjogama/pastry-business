@@ -6,7 +6,7 @@
     "useIgnoreFile": true
   },
   "files": {
-    "includes": ["src/**", "tests/**", "*.config.ts", "*.json"]
+    "includes": ["src/**", "!src/generated", "tests/**", "*.config.ts", "*.json"]
   },
   "formatter": {
     "indentStyle": "space",

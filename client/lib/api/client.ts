@@ -33,7 +33,7 @@ interface RequestOptions extends Omit<RequestInit, "body" | "method"> {
 }
 
 const buildUrl = (path: string, query?: Query) => {
-  const url = new URL(`${env.NEXT_PUBLIC_API_URL.replace(/\/$/, "")}${path}`);
+  const url = new URL(`${env.SERVER_API.replace(/\/$/, "")}${path}`);
   for (const [key, value] of Object.entries(query ?? {})) {
     if (value !== undefined) url.searchParams.set(key, String(value));
   }

@@ -1,11 +1,13 @@
 import { z } from "zod";
 
 const envSchema = z.object({
-  NEXT_PUBLIC_API_URL: z.url(),
+  SERVER_API: z.url(),
 });
 
+// SERVER_API has no NEXT_PUBLIC_ prefix, so next.config.ts `env` inlines it at build time; that is
+// what makes it readable in the browser. Read it written out in full: other lookups are not inlined.
 const parsed = envSchema.safeParse({
-  NEXT_PUBLIC_API_URL: process.env.NEXT_PUBLIC_API_URL,
+  SERVER_API: process.env.SERVER_API,
 });
 
 if (!parsed.success) {
@@ -25,4 +27,4 @@ function reachableApiUrl(url: string) {
   return api.toString().replace(/\/$/, "");
 }
 
-export const env = { ...parsed.data, NEXT_PUBLIC_API_URL: reachableApiUrl(parsed.data.NEXT_PUBLIC_API_URL) };
+export const env = { ...parsed.data, SERVER_API: reachableApiUrl(parsed.data.SERVER_API) };

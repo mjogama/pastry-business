@@ -4,7 +4,7 @@
 
 ```bash
 pnpm install
-cp .env.example .env.local   # point NEXT_PUBLIC_API_URL at the server
+cp .env.example .env.local   # point SERVER_API at the server
 pnpm dev
 ```
 
@@ -30,9 +30,9 @@ Validated in [`lib/env.ts`](lib/env.ts); an invalid value stops the app with a m
 
 | Variable              | Purpose                                                  |
 | --------------------- | -------------------------------------------------------- |
-| `NEXT_PUBLIC_API_URL` | Server API base URL including the version, e.g. `http://localhost:8001/api/v1` |
+| `SERVER_API` | Server API base URL including the version, e.g. `http://localhost:8001/api/v1` |
 
-`NEXT_PUBLIC_` values are baked into the bundle at build time. To add one, add it to the schema in `lib/env.ts` and read it there as `process.env.NEXT_PUBLIC_NAME` written out in full; Next.js does not inline values read any other way.
+`SERVER_API` is baked into the bundle at build time through `env` in `next.config.ts`, so the browser can read it without a `NEXT_PUBLIC_` prefix; set it before `next build` and rebuild after changing it. To add another browser-visible value, add it to `env` in `next.config.ts` (or prefix it `NEXT_PUBLIC_`), add it to the schema in `lib/env.ts`, and read it there as `process.env.NAME` written out in full; Next.js does not inline values read any other way.
 
 The server's `BASE_URL` must include this app's origin (`http://localhost:3000` in development), or the browser blocks requests with a CORS error.
 

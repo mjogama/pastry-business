@@ -1,35 +1,40 @@
 "use client";
 
-import { GripVerticalIcon, PlusIcon, Trash2Icon } from "lucide-react";
-import { useEffect, useLayoutEffect, useRef, useState } from "react";
-
+import type {
+  Ingredient,
+  IngredientSection,
+  IngredientUnit,
+  Recipe,
+  RecipeStep,
+  StepTag,
+  TemperatureUnit,
+} from "@common/modules/recipes";
+import { GripVerticalIcon, PlusIcon, Trash2Icon, XIcon } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
+import { NativeSelect, NativeSelectOption } from "@/components/ui/native-select";
 import { newId } from "@/lib/id";
 import { cn } from "@/lib/utils";
-
-import { toGramsInput } from "../lib/format";
-import type { Recipe } from "../types";
+import { recipeErrorMessage } from "../api";
+import { INGREDIENT_UNITS, TEMPERATURE_UNITS, toIntegerInput, toNumberInput } from "../lib/format";
+import { ADD, AREA, AutoTextarea, Field, INPUT, REMOVE, UnitField } from "./edit-fields";
 import { MODAL_CONTENT, MODAL_HEADING, MODAL_OVERLAY, MODAL_PILL, StepNumber } from "./recipe-modal";
 
-const FIELD = "rounded-card border-border bg-surface-inset px-3 text-cell text-foreground-ingredient";
-const INPUT = cn(FIELD, "h-11");
-const AREA = cn(FIELD, "min-h-11 max-h-40 resize-none overflow-y-auto py-2.5 leading-[1.55]");
-const FIELD_LABEL = "text-label-sm font-semibold text-muted-foreground";
-const ADD = "h-11 gap-1.5 rounded-card border border-dashed border-input text-body font-medium text-foreground-2";
-const REMOVE = "size-touch shrink-0 rounded-pill text-muted-foreground";
+const DEFAULT_CATEGORIES = ["Breads", "Sweet", "Cakes", "Cookies", "Savory", "Drinks", "Uncategorized"];
 
 type Props = {
   recipe: Recipe | null;
-  onSave: (recipe: Recipe) => void;
+  categories?: string[];
+  isNew?: boolean;
+  /** Saves to the server; a rejected promise keeps the editor open and shows the error. */
+  onSave: (recipe: Recipe) => Promise<void>;
   onClose: () => void;
 };
 
 /** Separate editor for a recipe's details, ingredients, steps and Baker's note. */
-export function RecipeEditModal({ recipe, onSave, onClose }: Props) {
+export function RecipeEditModal({ recipe, categories = [], isNew = false, onSave, onClose }: Props) {
   return (
     <Dialog open={recipe !== null} onOpenChange={(open) => !open && onClose()}>
       <DialogContent
@@ -38,21 +43,38 @@ export function RecipeEditModal({ recipe, onSave, onClose }: Props) {
         className={cn(MODAL_CONTENT, "w-[min(680px,100%)] sm:max-w-[min(680px,calc(100%-2rem))]")}
       >
         {/* Keyed so the draft starts fresh for every recipe. */}
-        {recipe && <EditForm key={recipe.id} recipe={recipe} onSave={onSave} onClose={onClose} />}
+        {recipe && (
+          <EditForm
+            key={recipe.id}
+            recipe={recipe}
+            categories={categories}
+            isNew={isNew}
+            onSave={onSave}
+            onClose={onClose}
+          />
+        )}
       </DialogContent>
     </Dialog>
   );
 }
 
-/** `grams` stays a string while typing; it becomes a number on save. */
-type Row = { key: string; grams: string; item: string };
-type Step = { key: string; text: string };
+/**
+ * Editor rows built from the shared types: each adds a React `key` (and `kind` for the mixed
+ * ingredient list), and `quantity` stays a string while typing, becoming a number on save.
+ */
+type ItemRow = Omit<Ingredient, "quantity"> & { key: string; kind: "item"; quantity: string };
+type SectionRow = Required<Pick<IngredientSection, "name">> & { key: string; kind: "section" };
+type Row = ItemRow | SectionRow;
+type Step = Required<RecipeStep> & { key: string };
+type Dragging = { list: "rows" | "steps"; key: string };
 
 const newKey = () => newId();
+const toNumber = (v: string) => (v === "" || Number.isNaN(Number(v)) ? undefined : Number(v));
+const optional = (v: string) => v.trim() || undefined;
 
-/** Moves the step with `key` to index `to`; out-of-range targets leave the list as is. */
-const reorder = (r: Step[], key: string, to: number) => {
-  const from = r.findIndex((st) => st.key === key);
+/** Moves the entry with `key` to index `to`; out-of-range targets leave the list as is. */
+const reorder = <T extends { key: string }>(r: T[], key: string, to: number) => {
+  const from = r.findIndex((x) => x.key === key);
   if (from < 0 || to < 0 || to >= r.length || from === to) return r;
   const next = [...r];
   const [moved] = next.splice(from, 1);
@@ -60,66 +82,119 @@ const reorder = (r: Step[], key: string, to: number) => {
   return next;
 };
 
-function EditForm({ recipe, onSave, onClose }: { recipe: Recipe; onSave: Props["onSave"]; onClose: () => void }) {
+function EditForm({
+  recipe,
+  categories,
+  isNew,
+  onSave,
+  onClose,
+}: {
+  recipe: Recipe;
+  categories: string[];
+  isNew: boolean;
+  onSave: Props["onSave"];
+  onClose: () => void;
+}) {
   const [details, setDetails] = useState({
     name: recipe.name,
-    category: recipe.category,
-    temperature: recipe.temperature ?? "",
-    time: recipe.time ?? "",
-    quantity: recipe.quantity ?? "",
+    category: recipe.category || "Uncategorized",
     description: recipe.description ?? "",
     note: recipe.note ?? "",
+    time: recipe.time ?? "",
+    quantity: recipe.quantity?.toString() ?? "",
   });
+  const [temp, setTemp] = useState({
+    value: recipe.temperature?.value.toString() ?? "",
+    unit: (recipe.temperature?.unit ?? "°C") as TemperatureUnit,
+  });
+  // Section ids double as row keys, so saving keeps them stable.
   const [rows, setRows] = useState<Row[]>(() =>
-    recipe.ingredients.map((ing) => ({ key: newKey(), grams: ing.grams?.toString() ?? "", item: ing.item })),
+    recipe.sections.flatMap((section, i): Row[] => [
+      // Only a leading unnamed section is headless; later ones keep a (blank) heading row so they stay separate.
+      ...(i === 0 && section.name === undefined
+        ? []
+        : [{ key: section.id ?? newKey(), kind: "section" as const, name: section.name ?? "" }]),
+      ...section.ingredients.map((ing) => ({
+        key: newKey(),
+        kind: "item" as const,
+        quantity: ing.quantity.toString(),
+        unit: ing.unit,
+        ingredient_name: ing.ingredient_name,
+      })),
+    ]),
   );
-  const [steps, setSteps] = useState<Step[]>(() => recipe.steps.map((text) => ({ key: newKey(), text })));
+  // The unnamed leading section keeps its id across saves; a new id is made only if there was none.
+  const [leadId] = useState(() => (recipe.sections[0]?.name === undefined && recipe.sections[0]?.id) || newKey());
+  const [steps, setSteps] = useState<Step[]>(() =>
+    recipe.steps.map((st) => ({ key: newKey(), text: st.text, tags: st.tags ?? [] })),
+  );
 
-  // The row just added by "Add ingredient" / "Add step" takes focus.
+  const categoryOptions = [...new Set([...DEFAULT_CATEGORIES, ...categories, details.category])];
+
+  // The row just added by "Add ingredient" / "Add section" / "Add step" takes focus.
   const [focusKey, setFocusKey] = useState<string | null>(null);
-  const addRow = () => {
+  const addRow = (kind: Row["kind"]) => {
     const key = newKey();
-    setRows((r) => [...r, { key, grams: "", item: "" }]);
+    setRows((r) => [
+      ...r,
+      kind === "item" ? { key, kind, quantity: "", unit: "g", ingredient_name: "" } : { key, kind, name: "" },
+    ]);
     setFocusKey(key);
   };
   const addStep = () => {
     const key = newKey();
-    setSteps((r) => [...r, { key, text: "" }]);
+    setSteps((r) => [...r, { key, text: "", tags: [] }]);
     setFocusKey(key);
   };
 
-  const set = (field: keyof typeof details) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) =>
+  const setDetail = (field: keyof typeof details) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) =>
     setDetails((d) => ({ ...d, [field]: e.target.value }));
-  const updateRow = (key: string, patch: Partial<Row>) =>
-    setRows((r) => r.map((row) => (row.key === key ? { ...row, ...patch } : row)));
-  const updateStep = (key: string, text: string) =>
-    setSteps((r) => r.map((st) => (st.key === key ? { ...st, text } : st)));
+  const updateRow = (key: string, patch: Partial<ItemRow> & Partial<SectionRow>) =>
+    setRows((r) => r.map((row) => (row.key === key ? ({ ...row, ...patch } as Row) : row)));
+  const updateStep = (key: string, patch: Partial<Step>) =>
+    setSteps((r) => r.map((st) => (st.key === key ? { ...st, ...patch } : st)));
 
-  // Drag a step by its handle; hovering it over another step moves it into that spot.
-  const [dragKey, setDragKey] = useState<string | null>(null);
+  // Step tags: one step at a time has its small add form open.
+  const [tagStepKey, setTagStepKey] = useState<string | null>(null);
+  const [tagDraft, setTagDraft] = useState("");
+  const openTagForm = (key: string) => {
+    setTagStepKey(key);
+    setTagDraft("");
+  };
+  const addTag = (key: string) => {
+    const description = tagDraft.trim();
+    if (!description) return;
+    const tag: StepTag = { description };
+    setSteps((r) => r.map((st) => (st.key === key ? { ...st, tags: [...st.tags, tag] } : st)));
+    setTagStepKey(null);
+  };
+
+  // Drag a row or step by its handle; hovering it over another entry moves it into that spot.
+  const [drag, setDrag] = useState<Dragging | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
 
   // Window listeners, not pointer capture: React moves the dragged row in the DOM, which drops capture.
   useEffect(() => {
-    if (!dragKey) return;
+    if (!drag) return;
     const onMove = (e: PointerEvent) => {
-      const over = document.elementFromPoint(e.clientX, e.clientY)?.closest<HTMLElement>("[data-step-key]");
-      const overKey = over?.dataset.stepKey;
-      if (overKey && overKey !== dragKey) {
-        setSteps((r) =>
+      const over = document.elementFromPoint(e.clientX, e.clientY)?.closest<HTMLElement>("[data-drag-key]");
+      const overKey = over?.dataset.dragKey;
+      if (overKey && overKey !== drag.key && over?.dataset.dragList === drag.list) {
+        const move = <T extends { key: string }>(r: T[]) =>
           reorder(
             r,
-            dragKey,
-            r.findIndex((st) => st.key === overKey),
-          ),
-        );
+            drag.key,
+            r.findIndex((x) => x.key === overKey),
+          );
+        if (drag.list === "rows") setRows(move);
+        else setSteps(move);
       }
       // Scroll the form while dragging near its top or bottom edge.
       const box = scrollRef.current?.getBoundingClientRect();
       if (box && e.clientY < box.top + 48) scrollRef.current?.scrollBy({ top: -12 });
       if (box && e.clientY > box.bottom - 48) scrollRef.current?.scrollBy({ top: 12 });
     };
-    const stop = () => setDragKey(null);
+    const stop = () => setDrag(null);
     window.addEventListener("pointermove", onMove);
     window.addEventListener("pointerup", stop);
     window.addEventListener("pointercancel", stop);
@@ -128,43 +203,81 @@ function EditForm({ recipe, onSave, onClose }: { recipe: Recipe; onSave: Props["
       window.removeEventListener("pointerup", stop);
       window.removeEventListener("pointercancel", stop);
     };
-  }, [dragKey]);
+  }, [drag]);
 
-  const onGripDown = (key: string) => (e: React.PointerEvent) => {
+  const onGripDown = (list: Dragging["list"], key: string) => (e: React.PointerEvent) => {
     if (e.pointerType === "mouse" && e.button !== 0) return;
     e.preventDefault();
-    setDragKey(key);
+    setDrag({ list, key });
   };
 
-  const onGripKey = (key: string, i: number) => (e: React.KeyboardEvent) => {
+  const onGripKey = (list: Dragging["list"], key: string, i: number) => (e: React.KeyboardEvent) => {
     if (e.key !== "ArrowUp" && e.key !== "ArrowDown") return;
     e.preventDefault();
     const to = e.key === "ArrowUp" ? i - 1 : i + 1;
-    setSteps((r) => reorder(r, key, to));
+    if (list === "rows") setRows((r) => reorder(r, key, to));
+    else setSteps((r) => reorder(r, key, to));
   };
 
-  const optional = (v: string) => v.trim() || undefined;
   const canSave = details.name.trim() !== "";
 
-  const save = () => {
-    if (!canSave) return;
-    onSave({
-      ...recipe,
+  const build = (): Recipe => {
+    const quantity = toNumber(details.quantity);
+    const tempValue = toNumber(temp.value);
+    // Ingredients above the first section row go in an unnamed section; each section row starts a new one.
+    const sections: IngredientSection[] = [];
+    let current: IngredientSection | undefined;
+    for (const row of rows) {
+      if (row.kind === "section") {
+        current = { id: row.key, name: optional(row.name), ingredients: [] };
+        sections.push(current);
+        continue;
+      }
+      const quantity = toNumber(row.quantity);
+      const ingredient_name = row.ingredient_name.trim();
+      if (quantity === undefined && !ingredient_name) continue;
+      if (!current) {
+        current = { id: leadId, ingredients: [] };
+        sections.push(current);
+      }
+      // `quantity` is required by the shared `Ingredient`; a blank one is saved as 0.
+      current.ingredients.push({ quantity: quantity ?? 0, unit: row.unit, ingredient_name });
+    }
+    return {
+      id: recipe.id,
       name: details.name.trim(),
       category: details.category.trim() || "Uncategorized",
-      temperature: optional(details.temperature),
+      quantity,
       time: optional(details.time),
-      quantity: optional(details.quantity),
+      temperature: tempValue === undefined ? undefined : { value: tempValue, unit: temp.unit },
       description: optional(details.description),
       note: optional(details.note),
-      ingredients: rows
-        .map(({ grams, item }) => ({
-          grams: grams === "" || Number.isNaN(Number(grams)) ? undefined : Number(grams),
-          item: item.trim(),
-        }))
-        .filter((ing) => ing.grams !== undefined || ing.item),
-      steps: steps.map((st) => st.text.trim()).filter(Boolean),
-    });
+      sections,
+      steps: steps
+        .filter((st) => st.text.trim())
+        .map((st) => ({ text: st.text.trim(), ...(st.tags.length > 0 && { tags: st.tags }) })),
+    };
+  };
+
+  // Compared against the recipe as first built, so reverting a change clears the flag.
+  const initial = useRef<string | null>(null);
+  const current = JSON.stringify(build());
+  initial.current ??= current;
+  const dirty = current !== initial.current;
+
+  const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
+  const save = async () => {
+    if (!canSave || saving) return;
+    setSaving(true);
+    setSaveError(null);
+    try {
+      await onSave(build());
+    } catch (error) {
+      setSaveError(recipeErrorMessage(error));
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (
@@ -176,69 +289,114 @@ function EditForm({ recipe, onSave, onClose }: { recipe: Recipe; onSave: Props["
       }}
     >
       <header className="flex shrink-0 items-center gap-3 border-b border-border py-3.5 pr-3.5 pl-5 min-[761px]:pl-7.5">
-        <DialogTitle className="min-w-0 truncate font-display text-[22px] leading-tight font-bold">
-          Edit recipe
-        </DialogTitle>
+        <div className="min-w-0">
+          <DialogTitle className="truncate font-display text-[22px] leading-tight font-bold">
+            {isNew ? "New recipe" : "Edit recipe"}
+          </DialogTitle>
+          {dirty && (
+            <p aria-live="polite" className="flex items-center gap-1.5 text-label-sm text-muted-foreground">
+              <span aria-hidden="true" className="size-1.5 rounded-full bg-primary" />
+              Unsaved changes
+            </p>
+          )}
+        </div>
         <div className="ml-auto flex shrink-0 items-center gap-2">
           <Button type="button" variant="ghost" onClick={onClose} className={cn(MODAL_PILL, "border border-input")}>
             Cancel
           </Button>
-          <Button type="submit" disabled={!canSave} className={cn(MODAL_PILL, "font-bold")}>
-            Save
+          <Button type="submit" disabled={!canSave || saving} className={cn(MODAL_PILL, "font-bold")}>
+            {saving ? "Saving…" : isNew ? "Create" : "Save"}
           </Button>
         </div>
       </header>
+      {saveError && (
+        <p
+          role="alert"
+          className="shrink-0 border-b border-border bg-destructive/10 px-5 py-2.5 text-label-sm text-destructive min-[761px]:px-7.5"
+        >
+          {saveError}
+        </p>
+      )}
 
       <div
         ref={scrollRef}
         className="flex min-h-0 flex-1 flex-col gap-7 overflow-y-auto overscroll-contain px-5 pt-5 pb-7 min-[761px]:px-7.5"
       >
         <section className="flex flex-col gap-3">
-          <h3 className={MODAL_HEADING}>Description</h3>
-          <Field id="edit-name" label="Recipe name">
-            <Input id="edit-name" value={details.name} onChange={set("name")} maxLength={60} className={INPUT} />
+          <h3 className={MODAL_HEADING}>Details</h3>
+          <Field id="edit-name" label="Recipe name" required>
+            <Input
+              id="edit-name"
+              value={details.name}
+              onChange={setDetail("name")}
+              maxLength={60}
+              autoFocus={isNew}
+              className={INPUT}
+            />
           </Field>
           <Field id="edit-category" label="Category">
-            <Input id="edit-category" value={details.category} onChange={set("category")} className={INPUT} />
+            <NativeSelect
+              id="edit-category"
+              value={details.category}
+              onChange={(e) => setDetails((d) => ({ ...d, category: e.target.value }))}
+              className="font-normal text-foreground-ingredient"
+            >
+              {categoryOptions.map((c) => (
+                <NativeSelectOption key={c} value={c}>
+                  {c}
+                </NativeSelectOption>
+              ))}
+            </NativeSelect>
           </Field>
-          <div className="grid grid-cols-1 gap-3 min-[481px]:grid-cols-3">
+          <div className="grid grid-cols-2 gap-3">
             <Field id="edit-temp" label="Temp">
-              <Input
+              <UnitField
                 id="edit-temp"
-                value={details.temperature}
-                placeholder="180 °C"
-                onChange={set("temperature")}
-                className={INPUT}
+                value={temp.value}
+                unit={temp.unit}
+                units={TEMPERATURE_UNITS}
+                placeholder="180"
+                onValueChange={(value) => setTemp((t) => ({ ...t, value }))}
+                onUnitChange={(unit) => setTemp((t) => ({ ...t, unit }))}
               />
             </Field>
-            <Field id="edit-time" label="Time">
-              <Input id="edit-time" value={details.time} placeholder="2 hr" onChange={set("time")} className={INPUT} />
-            </Field>
-            <Field id="edit-quantity" label="Quantity">
+            <Field id="edit-time" label="Est. Time">
               <Input
-                id="edit-quantity"
-                value={details.quantity}
-                placeholder="Makes 12"
-                onChange={set("quantity")}
+                id="edit-time"
+                value={details.time}
+                placeholder="2 hr 30 min"
+                onChange={setDetail("time")}
                 className={INPUT}
               />
             </Field>
+            <div className="col-span-2">
+              <Field id="edit-quantity" label="Quantity">
+                <Input
+                  id="edit-quantity"
+                  inputMode="numeric"
+                  value={details.quantity}
+                  placeholder="12"
+                  onChange={(e) => setDetails((d) => ({ ...d, quantity: toIntegerInput(e.target.value) }))}
+                  className={cn(INPUT, "font-semibold text-primary tabular")}
+                />
+              </Field>
+            </div>
           </div>
-          <Field id="edit-description" label="Description" optional>
+          <Field id="edit-description" label="Description" hint="(optional)">
             <AutoTextarea
               id="edit-description"
               value={details.description}
               placeholder="What makes this recipe special"
-              onChange={set("description")}
+              onChange={setDetail("description")}
               className={cn(AREA, "min-h-20")}
             />
           </Field>
-          <Field id="edit-note" label="Baker's note">
+          <Field id="edit-note" label="Baker's note" hint="(optional)">
             <AutoTextarea
               id="edit-note"
               value={details.note}
               placeholder="Tips, swaps or reminders"
-              onChange={set("note")}
+              onChange={setDetail("note")}
               className={cn(AREA, "min-h-20")}
             />
           </Field>
@@ -246,48 +404,103 @@ function EditForm({ recipe, onSave, onClose }: { recipe: Recipe; onSave: Props["
 
         <section className="flex flex-col gap-2.5">
           <h3 className={MODAL_HEADING}>Ingredients</h3>
-          {rows.map((row, i) => (
-            <div key={row.key} className="flex items-center gap-2">
-              <div className="relative w-24 shrink-0">
+          {rows.map((row, i) =>
+            row.kind === "section" ? (
+              <div key={row.key} data-drag-key={row.key} data-drag-list="rows" className="flex items-center gap-2">
                 <Input
-                  aria-label={`Ingredient ${i + 1} amount in grams`}
+                  aria-label="Section name"
+                  autoFocus={row.key === focusKey}
+                  value={row.name}
+                  placeholder="Section name, e.g. Dough"
+                  onChange={(e) => updateRow(row.key, { name: e.target.value })}
+                  className={cn(INPUT, "h-9 flex-1 border-dashed border-input bg-transparent font-bold text-primary")}
+                />
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  aria-label="Remove section"
+                  onClick={() => setRows((r) => r.filter((x) => x.key !== row.key))}
+                  className={REMOVE}
+                >
+                  <Trash2Icon className="size-4" />
+                </Button>
+              </div>
+            ) : (
+              <div
+                key={row.key}
+                data-drag-key={row.key}
+                data-drag-list="rows"
+                className={cn(
+                  "flex items-center gap-2 rounded-card transition-[background-color,box-shadow] motion-reduce:transition-none",
+                  drag?.key === row.key && "bg-surface-chip shadow-card-side ring-1 ring-line-active",
+                )}
+              >
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  aria-label={`Reorder ingredient ${i + 1}. Drag, or use the up and down arrow keys`}
+                  onPointerDown={onGripDown("rows", row.key)}
+                  onKeyDown={onGripKey("rows", row.key, i)}
+                  className={cn(
+                    "-mr-1.5 h-11 w-6 shrink-0 touch-none rounded-pill text-foreground-faint",
+                    drag?.key === row.key ? "cursor-grabbing" : "cursor-grab",
+                  )}
+                >
+                  <GripVerticalIcon className="size-4" />
+                </Button>
+                <Input
+                  aria-label={`Ingredient ${i + 1} quantity`}
                   autoFocus={row.key === focusKey}
                   inputMode="decimal"
-                  value={row.grams}
+                  value={row.quantity}
                   placeholder="0"
-                  onChange={(e) => updateRow(row.key, { grams: toGramsInput(e.target.value) })}
-                  className={cn(INPUT, "pr-7 font-semibold text-primary tabular")}
+                  onChange={(e) => updateRow(row.key, { quantity: toNumberInput(e.target.value) })}
+                  className={cn(INPUT, "w-16 shrink-0 px-2 text-center font-semibold text-primary tabular")}
                 />
-                <span
-                  aria-hidden="true"
-                  className="pointer-events-none absolute top-1/2 right-3 -translate-y-1/2 text-cell text-muted-foreground"
+                <NativeSelect
+                  aria-label={`Ingredient ${i + 1} unit`}
+                  value={row.unit}
+                  onChange={(e) => updateRow(row.key, { unit: e.target.value as IngredientUnit })}
+                  wrapperClassName="w-20 shrink-0"
                 >
-                  g
-                </span>
+                  {INGREDIENT_UNITS.map((u) => (
+                    <NativeSelectOption key={u} value={u}>
+                      {u}
+                    </NativeSelectOption>
+                  ))}
+                </NativeSelect>
+                <Input
+                  aria-label={`Ingredient ${i + 1} name`}
+                  value={row.ingredient_name}
+                  placeholder="Ingredient"
+                  onChange={(e) => updateRow(row.key, { ingredient_name: e.target.value })}
+                  className={INPUT}
+                />
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  aria-label={`Remove ingredient ${i + 1}`}
+                  onClick={() => setRows((r) => r.filter((x) => x.key !== row.key))}
+                  className={REMOVE}
+                >
+                  <Trash2Icon className="size-4" />
+                </Button>
               </div>
-              <Input
-                aria-label={`Ingredient ${i + 1} name`}
-                value={row.item}
-                placeholder="Ingredient"
-                onChange={(e) => updateRow(row.key, { item: e.target.value })}
-                className={INPUT}
-              />
-              <Button
-                type="button"
-                variant="ghost"
-                size="icon"
-                aria-label={`Remove ingredient ${i + 1}`}
-                onClick={() => setRows((r) => r.filter((x) => x.key !== row.key))}
-                className={REMOVE}
-              >
-                <Trash2Icon className="size-4" />
-              </Button>
-            </div>
-          ))}
-          <Button type="button" variant="ghost" onClick={addRow} className={ADD}>
-            <PlusIcon className="size-4" />
-            Add ingredient
-          </Button>
+            ),
+          )}
+          <div className="grid grid-cols-2 gap-2">
+            <Button type="button" variant="ghost" onClick={() => addRow("item")} className={ADD}>
+              <PlusIcon className="size-4" />
+              Add ingredient
+            </Button>
+            <Button type="button" variant="ghost" onClick={() => addRow("section")} className={ADD}>
+              <PlusIcon className="size-4" />
+              Add section
+            </Button>
+          </div>
         </section>
 
         <section className="flex flex-col gap-2.5">
@@ -295,45 +508,112 @@ function EditForm({ recipe, onSave, onClose }: { recipe: Recipe; onSave: Props["
           {steps.map((st, i) => (
             <div
               key={st.key}
-              data-step-key={st.key}
+              data-drag-key={st.key}
+              data-drag-list="steps"
               className={cn(
-                "flex items-start gap-2 rounded-card transition-[background-color,box-shadow] motion-reduce:transition-none",
-                dragKey === st.key && "bg-surface-chip shadow-card-side ring-1 ring-line-active",
+                "flex flex-col gap-1.5 rounded-card transition-[background-color,box-shadow] motion-reduce:transition-none",
+                drag?.key === st.key && "bg-surface-chip shadow-card-side ring-1 ring-line-active",
               )}
             >
-              <Button
-                type="button"
-                variant="ghost"
-                size="icon"
-                aria-label={`Reorder step ${i + 1}. Drag, or use the up and down arrow keys`}
-                onPointerDown={onGripDown(st.key)}
-                onKeyDown={onGripKey(st.key, i)}
-                className={cn(
-                  "-mr-2 h-11 w-7 shrink-0 touch-none rounded-pill text-foreground-faint",
-                  dragKey === st.key ? "cursor-grabbing" : "cursor-grab",
+              <div className="flex items-start gap-2">
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  aria-label={`Reorder step ${i + 1}. Drag, or use the up and down arrow keys`}
+                  onPointerDown={onGripDown("steps", st.key)}
+                  onKeyDown={onGripKey("steps", st.key, i)}
+                  className={cn(
+                    "-mr-2 h-11 w-7 shrink-0 touch-none rounded-pill text-foreground-faint",
+                    drag?.key === st.key ? "cursor-grabbing" : "cursor-grab",
+                  )}
+                >
+                  <GripVerticalIcon className="size-4" />
+                </Button>
+                <StepNumber n={i + 1} className="mt-2" />
+                <AutoTextarea
+                  aria-label={`Step ${i + 1}`}
+                  autoFocus={st.key === focusKey}
+                  value={st.text}
+                  placeholder="Describe this step"
+                  onChange={(e) => updateStep(st.key, { text: e.target.value })}
+                  className={AREA}
+                />
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  aria-label={`Remove step ${i + 1}`}
+                  onClick={() => setSteps((r) => r.filter((x) => x.key !== st.key))}
+                  className={REMOVE}
+                >
+                  <Trash2Icon className="size-4" />
+                </Button>
+              </div>
+
+              <div className="flex flex-wrap items-center gap-1.5 pl-16">
+                {st.tags.map((tag, t) => (
+                  <span
+                    key={tag.description}
+                    className="flex items-center gap-1 rounded-pill bg-primary/15 py-0.5 pr-1 pl-2.5 text-label-sm font-semibold text-primary"
+                  >
+                    {tag.description}
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      aria-label={`Remove ${tag.description ?? "tag"} from step ${i + 1}`}
+                      onClick={() => updateStep(st.key, { tags: st.tags.filter((_, j) => j !== t) })}
+                      className="size-5 rounded-full p-0 text-primary"
+                    >
+                      <XIcon className="size-3" />
+                    </Button>
+                  </span>
+                ))}
+                {tagStepKey === st.key ? (
+                  <div className="flex w-full flex-wrap items-center gap-1.5">
+                    <Input
+                      aria-label="Tag description"
+                      autoFocus
+                      value={tagDraft}
+                      placeholder="Rest · overnight"
+                      onChange={(e) => setTagDraft(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key !== "Enter") return;
+                        e.preventDefault();
+                        addTag(st.key);
+                      }}
+                      className={cn(INPUT, "h-9 w-56")}
+                    />
+                    <Button
+                      type="button"
+                      onClick={() => addTag(st.key)}
+                      disabled={!tagDraft.trim()}
+                      className="h-9 rounded-pill px-3 text-label font-bold"
+                    >
+                      Add
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      onClick={() => setTagStepKey(null)}
+                      className="h-9 rounded-pill px-3 text-label"
+                    >
+                      Cancel
+                    </Button>
+                  </div>
+                ) : (
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    onClick={() => openTagForm(st.key)}
+                    className="h-7 gap-1 rounded-pill px-2 text-label-sm text-muted-foreground"
+                  >
+                    <PlusIcon className="size-3" />
+                    Add description
+                  </Button>
                 )}
-              >
-                <GripVerticalIcon className="size-4" />
-              </Button>
-              <StepNumber n={i + 1} className="mt-2" />
-              <AutoTextarea
-                aria-label={`Step ${i + 1}`}
-                autoFocus={st.key === focusKey}
-                value={st.text}
-                placeholder="Describe this step"
-                onChange={(e) => updateStep(st.key, e.target.value)}
-                className={AREA}
-              />
-              <Button
-                type="button"
-                variant="ghost"
-                size="icon"
-                aria-label={`Remove step ${i + 1}`}
-                onClick={() => setSteps((r) => r.filter((x) => x.key !== st.key))}
-                className={REMOVE}
-              >
-                <Trash2Icon className="size-4" />
-              </Button>
+              </div>
             </div>
           ))}
           <Button type="button" variant="ghost" onClick={addStep} className={ADD}>
@@ -344,39 +624,4 @@ function EditForm({ recipe, onSave, onClose }: { recipe: Recipe; onSave: Props["
       </div>
     </form>
   );
-}
-
-function Field({
-  id,
-  label,
-  optional,
-  children,
-}: {
-  id: string;
-  label: string;
-  optional?: boolean;
-  children: React.ReactNode;
-}) {
-  return (
-    <div className="flex flex-col gap-1.5">
-      <Label htmlFor={id} className={FIELD_LABEL}>
-        {label}
-        {optional && <span className="font-normal text-foreground-faint">(optional)</span>}
-      </Label>
-      {children}
-    </div>
-  );
-}
-
-/** Grows with its text up to `max-h-40`, then scrolls inside. No resize handle. */
-function AutoTextarea({ value, className, ...props }: React.ComponentProps<typeof Textarea> & { value: string }) {
-  const ref = useRef<HTMLTextAreaElement>(null);
-  // biome-ignore lint/correctness/useExhaustiveDependencies: re-measure whenever the text changes
-  useLayoutEffect(() => {
-    const el = ref.current;
-    if (!el) return;
-    el.style.height = "auto";
-    el.style.height = `${el.scrollHeight + el.offsetHeight - el.clientHeight}px`;
-  }, [value]);
-  return <Textarea ref={ref} value={value} rows={1} className={cn("field-sizing-fixed", className)} {...props} />;
 }

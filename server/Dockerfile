@@ -4,15 +4,20 @@ FROM node:24-alpine AS build
 WORKDIR /app
 COPY package.json package-lock.json ./
 RUN npm ci
-COPY tsconfig.json tsup.config.ts ./
+COPY tsconfig.json tsup.config.ts prisma.config.ts ./
+COPY prisma ./prisma
 COPY src ./src
+# Generates the Prisma client into src/generated (git-ignored), then bundles it into dist/.
 RUN npm run build
 
 FROM node:24-alpine
 ENV NODE_ENV=production
 WORKDIR /app
 COPY package.json package-lock.json ./
+# `prisma` is a runtime dependency so `npm run migrate:deploy` works in this image (Railway pre-deploy).
 RUN npm ci --omit=dev && npm cache clean --force
+COPY prisma.config.ts ./
+COPY prisma ./prisma
 COPY --from=build /app/dist ./dist
 USER node
 EXPOSE 8001

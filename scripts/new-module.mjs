@@ -1,7 +1,8 @@
 // Scaffolds a server module plus its shared contract, and mounts it in the v1 router.
 // Usage (from the root): npm run module:create -- <name>   or   npm run module:create -- --name <name>
 // <name> is singular, e.g. "auth", "blog-post", "blogPost". The route is the kebab-case plural.
-// Undo with: npm run module:remove -- <name>
+// Also writes starter tests (see new-module-tests.mjs); pass --no-tests to skip them.
+// Undo with: npm run module:delete -- <name>   (alias: module:remove)
 
 import { execFileSync } from "node:child_process";
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
@@ -233,4 +234,9 @@ console.log(`Created module "${n.kebab}" at /api/v1/${n.kebabs}:`);
 for (const path of Object.keys(files)) console.log(`  + ${relative(root, path)}`);
 console.log(`  ~ ${relative(root, routesFile)}`);
 if (keepSharedFile) console.log(`  = ${relative(root, sharedFile)} (kept, already existed)`);
-console.log(`\nNext: edit the fields in shared/modules/${n.kebab}.ts and ${n.kebab}.schema.ts, then /write-module-tests ${n.kebab}.`);
+
+if (!process.argv.includes("--no-tests")) {
+  execFileSync("node", [join(root, "scripts/new-module-tests.mjs"), n.kebab], { stdio: "inherit" });
+}
+
+console.log(`\nNext: edit the fields in shared/modules/${n.kebab}.ts and ${n.kebab}.schema.ts, then update the tests to match (npm run module:test -- ${n.kebab} --force regenerates them).`);

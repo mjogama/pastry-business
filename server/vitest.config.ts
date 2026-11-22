@@ -18,7 +18,6 @@ export default defineConfig({
     env: {
       NODE_ENV: "test",
       PORT: "8001",
-      DB_URI: "test://localhost/test",
       BASE_URL: "http://localhost:3000",
       TRUST_PROXY: "false",
       RATE_LIMIT_MAX: "100",

@@ -4,14 +4,24 @@
   "scripts": {
     "setup": "npm --prefix server install && pnpm --dir client install",
     "dev": "concurrently -k -n server,client -c blue,magenta \"npm --prefix server run dev\" \"pnpm --dir client dev\"",
+    "server:dev": "npm --prefix server run dev",
+    "server:build": "npm --prefix server run build",
+    "server:migrate": "npm --prefix server run migrate:deploy",
+    "server:start": "npm --prefix server start",
     "check": "npm --prefix server run check && pnpm --dir client check",
     "imports": "node .claude/skills/sort-imports/sort-imports.mjs server",
     "imports:check": "node .claude/skills/sort-imports/sort-imports.mjs server --check",
     "comments:clean": "node .claude/skills/clean-comments/clean-comments.mjs",
     "module:create": "node scripts/new-module.mjs",
-    "module:remove": "node scripts/remove-module.mjs"
+    "module:test": "node scripts/new-module-tests.mjs",
+    "module:remove": "node scripts/remove-module.mjs",
+    "module:delete": "node scripts/remove-module.mjs"
   },
   "devDependencies": {
     "concurrently": "^10.0.7"
+  },
+  "dependencies": {
+    "@neon/config": "^1.14.6",
+    "@neon/env": "^2.1.9"
   }
 }
