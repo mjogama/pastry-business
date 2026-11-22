@@ -87,7 +87,7 @@ function RecipeSpread({
   return (
     <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain">
       <header className="sticky top-0 z-10 flex items-center gap-3 border-b border-border bg-surface-2 py-3.5 pr-3.5 pl-5 min-[761px]:grid min-[761px]:grid-cols-2 min-[761px]:gap-0 min-[761px]:p-0">
-        <span className="min-w-0 truncate text-label-sm font-bold tracking-eyebrow-sm text-primary uppercase min-[761px]:px-7.5">
+        <span className="min-w-0 truncate text-label-sm font-bold tracking-eyebrow-sm text-honey uppercase min-[761px]:px-7.5">
           {recipe.category}
         </span>
         <div className="flex min-w-0 flex-1 items-center gap-3 min-[761px]:border-l min-[761px]:border-border min-[761px]:py-3.5 min-[761px]:pr-3.5 min-[761px]:pl-7.5">
@@ -191,7 +191,7 @@ function RecipeSpread({
               >
                 <MinusIcon className="size-4" />
               </Button>
-              <output aria-live="polite" className="min-w-10 text-center text-body font-bold text-primary tabular">
+              <output aria-live="polite" className="min-w-10 text-center text-body font-bold text-honey tabular">
                 ×{multiplier}
               </output>
               <Button
@@ -214,7 +214,7 @@ function RecipeSpread({
               {recipe.sections.map((section, s) => (
                 <section key={section.id ?? s} aria-label={section.name}>
                   {section.name && (
-                    <h4 className="pt-3 pb-1 text-label font-bold tracking-[1.2px] text-primary uppercase">
+                    <h4 className="pt-3 pb-1 text-label font-bold tracking-[1.2px] text-honey uppercase">
                       {section.name}
                     </h4>
                   )}
@@ -224,7 +224,7 @@ function RecipeSpread({
                         key={`${ing.quantity}-${ing.unit}-${ing.ingredient_name}`}
                         className="flex gap-3 border-b border-dashed border-border py-2.5 text-cell leading-[1.4]"
                       >
-                        <span className="min-w-21 font-semibold text-primary tabular">
+                        <span className="min-w-21 font-semibold text-honey tabular">
                           {formatAmount(ing.quantity * multiplier, ing.unit)}
                         </span>
                         <span className="text-foreground-ingredient">{ing.ingredient_name}</span>
@@ -259,7 +259,7 @@ function RecipeSpread({
                           .map((tag) => (
                             <span
                               key={tag.description}
-                              className="rounded-pill bg-surface-chip px-2.5 py-1 text-label-sm font-semibold text-primary"
+                              className="rounded-pill bg-surface-chip px-2.5 py-1 text-label-sm font-semibold text-honey"
                             >
                               {tag.description}
                             </span>

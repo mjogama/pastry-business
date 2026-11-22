@@ -302,7 +302,7 @@ const EntryForm = ({ request, suggestions, now, isSheet, titleRef, onClose, onSa
           </TextButton>
           <span className="flex items-baseline gap-2">
             <span className="text-label text-muted-foreground">Total</span>
-            <Money amount={total} className="text-sum font-bold text-primary" />
+            <Money amount={total} className="text-sum font-bold text-honey" />
           </span>
         </div>
       </Card>

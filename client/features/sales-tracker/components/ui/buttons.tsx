@@ -90,7 +90,7 @@ export const DangerButton = ({
 export const TextButton = ({ className, ...props }: ButtonProps) => (
   <Button
     variant="ghost"
-    className={cn("h-touch px-1 text-body font-semibold text-primary hover:text-primary", className)}
+    className={cn("h-touch px-1 text-body font-semibold text-honey hover:text-honey", className)}
     {...props}
   />
 );

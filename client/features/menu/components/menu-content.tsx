@@ -62,7 +62,7 @@ export const TodaysPicks = async () => {
         <h2 id="picks-title" className="font-display text-picks-title font-bold text-foreground">
           Today’s picks
         </h2>
-        <Link href="/menu" className="flex min-h-touch items-center text-cell font-semibold text-primary">
+        <Link href="/menu" className="flex min-h-touch items-center text-cell font-semibold text-honey">
           See full menu →
         </Link>
       </div>

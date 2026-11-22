@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Fraunces, Geist, Geist_Mono, Inter } from "next/font/google";
 import "./globals.css";
+import { THEME_SCRIPT } from "@/lib/theme";
 import { cn } from "@/lib/utils";
 
 const inter = Inter({ subsets: ["latin"], variable: "--font-sans" });
@@ -25,8 +26,10 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
+    // The theme script sets data-theme on <html> before React hydrates.
     <html
       lang="en"
+      suppressHydrationWarning
       className={cn(
         "h-full",
         "antialiased",
@@ -37,6 +40,10 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
         fraunces.variable,
       )}
     >
+      <head>
+        {/* biome-ignore lint/security/noDangerouslySetInnerHtml: a constant script, no user input */}
+        <script dangerouslySetInnerHTML={{ __html: THEME_SCRIPT }} />
+      </head>
       <body className="min-h-full flex flex-col">{children}</body>
     </html>
   );

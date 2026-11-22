@@ -1,7 +1,9 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Suspense } from "react";
 
 import { RecipeBookLoader } from "@/features/recipes/components/recipe-book-loader";
+
+export const viewport: Viewport = { themeColor: "#FFF8EC" };
 
 export const metadata: Metadata = { title: "Recipe Book · Pato's Pâtisserie" };
 

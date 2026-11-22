@@ -39,7 +39,7 @@ const DayTotalLine = ({ total }: { total: number }) => (
       </span>
     )}
     <span>Day total</span>
-    <Money amount={total} className="text-sum-sm font-bold text-primary" />
+    <Money amount={total} className="text-sum-sm font-bold text-honey" />
   </>
 );
 
@@ -63,7 +63,7 @@ const EntryList = ({ group, isFuture, onEdit, onDelete }: Omit<DayDetailProps, "
                 {formatTime12(timeOf(entry.date))}
               </span>
             </span>
-            <Money amount={entryTotal(entry)} className="text-body-lg font-bold text-primary" />
+            <Money amount={entryTotal(entry)} className="text-body-lg font-bold text-honey" />
           </div>
           {entry.items.map((item, index) => (
             // biome-ignore lint/suspicious/noArrayIndexKey: items have no id and never reorder within an entry

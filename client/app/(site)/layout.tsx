@@ -1,9 +1,9 @@
 import type { Viewport } from "next";
 
-/** Public menu (docs/MENU_UI_V1.md): the Dark Roast shadcn theme, like the Sales Tracker. */
+/** Public menu (docs/MENU_UI_V1.md): the app theme, like the Sales Tracker. */
 export const viewport: Viewport = {
   viewportFit: "cover",
-  themeColor: "#1C1511",
+  themeColor: "#FFF8EC",
 };
 
 export default function SiteLayout({ children }: LayoutProps<"/">) {

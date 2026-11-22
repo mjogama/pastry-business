@@ -26,7 +26,7 @@ export default async function LandingPage() {
         {/* Hero: text above the image until both fit side by side (420 + 380 + 48px gap). */}
         <section aria-labelledby="hero-title" className="flex flex-wrap items-center gap-12">
           <div className="flex min-w-0 flex-[1_1_420px] flex-col gap-5.5">
-            <span className="text-body font-semibold tracking-eyebrow text-primary uppercase">Freshly baked</span>
+            <span className="text-body font-semibold tracking-eyebrow text-honey uppercase">Freshly baked</span>
             <h1 id="hero-title" className="font-display text-hero font-bold tracking-hero break-words text-foreground">
               {businessName}
             </h1>

@@ -2,6 +2,7 @@ import { io } from "next/cache";
 import Link from "next/link";
 import { Suspense } from "react";
 
+import { ThemeToggle } from "@/components/theme-toggle";
 import { buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
@@ -34,9 +35,12 @@ export const SiteTopBar = async ({ page }: { page: "landing" | "menu" }) => {
       >
         <span className="truncate">{businessName}</span>
       </Link>
-      <Link href={other.href} className={cn(buttonVariants({ variant: "nav", size: "pill" }))}>
-        {other.label}
-      </Link>
+      <div className="flex shrink-0 items-center gap-2">
+        <ThemeToggle />
+        <Link href={other.href} className={cn(buttonVariants({ variant: "nav", size: "pill" }))}>
+          {other.label}
+        </Link>
+      </div>
     </header>
   );
 };
@@ -74,7 +78,7 @@ export const SiteFooter = async () => {
           href={telHref(contactNumber)}
           className={cn(buttonVariants({ variant: "call-outline", size: "footer-call" }))}
         >
-          <PhoneIcon className="text-primary" />
+          <PhoneIcon className="text-honey" />
           <span className="flex flex-col leading-tight">
             <span className="text-label-sm font-normal text-muted-foreground">Call us</span>
             <span className="tabular text-body-lg font-semibold">{formatLocalPhone(contactNumber)}</span>

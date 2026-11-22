@@ -9,7 +9,7 @@ export const metadata: Metadata = {
 
 export const viewport: Viewport = {
   viewportFit: "cover",
-  themeColor: "#1C1511",
+  themeColor: "#FFF8EC",
 };
 
 export default function SalesTrackerPage() {

@@ -1,5 +1,4 @@
 import type { Recipe } from "@common/modules/recipes";
-import { cn } from "@/lib/utils";
 import { cardIngredientLayout, compactTime, formatAmount, formatQuantity, formatTemperature } from "../lib/format";
 import { BreadIcon } from "./icons";
 
@@ -30,14 +29,14 @@ export function BookCardFront({
     <>
       <span
         aria-hidden="true"
-        className="w-[clamp(10px,calc(var(--cw)*0.041),21px)] shrink-0 self-stretch border-r border-border bg-surface-spine"
+        className="w-[clamp(10px,calc(var(--cw)*0.041),21px)] shrink-0 self-stretch bg-primary"
       />
       <span className="flex h-full min-h-0 min-w-0 flex-1 flex-col gap-[clamp(6px,calc(var(--cw)*0.024),12px)] overflow-hidden py-[clamp(12px,calc(var(--cw)*0.047),24px)] pr-[clamp(12px,calc(var(--cw)*0.059),31px)] pl-[clamp(11px,calc(var(--cw)*0.053),28px)] text-left">
         <span className="flex items-center justify-between gap-2">
-          <span className="min-w-0 truncate text-micro font-bold tracking-eyebrow-sm text-primary uppercase">
+          <span className="min-w-0 truncate text-micro font-bold tracking-eyebrow-sm text-honey uppercase">
             {recipe.category}
           </span>
-          <span className="flex size-[clamp(26px,calc(var(--cw)*0.088),46px)] shrink-0 items-center justify-center rounded-[9px] bg-surface-icon-tile text-primary">
+          <span className="flex size-[clamp(26px,calc(var(--cw)*0.088),46px)] shrink-0 items-center justify-center rounded-[9px] bg-surface-icon-tile text-foreground">
             <BreadIcon className="size-4" />
           </span>
         </span>
@@ -67,10 +66,7 @@ export function BookCardFront({
           <span className="text-micro font-bold tracking-[1.2px] text-muted-foreground uppercase">Ingredients</span>
           <span
             title={`Amounts multiplied by ${multiplier}`}
-            className={cn(
-              "rounded-pill px-2.5 py-0.5 text-micro font-bold tabular",
-              multiplier > 1 ? "bg-primary text-primary-foreground" : "bg-surface-chip text-primary",
-            )}
+            className="rounded-pill bg-primary px-2.5 py-0.5 text-micro font-bold text-primary-foreground tabular"
           >
             ×{multiplier}
           </span>
@@ -94,7 +90,7 @@ export function BookCardFront({
                     key={i}
                     className="flex gap-2.5 border-b border-dashed border-border py-1.25"
                   >
-                    <span className="w-[calc(var(--cw)*0.24)] shrink-0 truncate text-right font-semibold text-primary tabular">
+                    <span className="w-[calc(var(--cw)*0.24)] shrink-0 truncate text-right font-semibold text-honey tabular">
                       {formatAmount(ing.quantity * multiplier, ing.unit)}
                     </span>
                     <span className="min-w-0 truncate text-foreground-ingredient">{ing.ingredient_name}</span>

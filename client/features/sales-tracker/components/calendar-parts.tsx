@@ -1,6 +1,7 @@
 import { ChevronLeftIcon, ChevronRightIcon } from "lucide-react";
 import type { KeyboardEvent, MouseEvent } from "react";
 
+import { ThemeToggle } from "@/components/theme-toggle";
 import { Card } from "@/components/ui/card";
 import type { YearMonth } from "../lib/dates";
 import { MONTH_NAMES, monthGrid, WEEKDAYS } from "../lib/dates";
@@ -29,15 +30,18 @@ export const TitleRow = ({
       <span className="font-bold">{MONTH_NAMES[view.month]}</span>{" "}
       <span className="font-normal text-foreground-2">{view.year}</span>
     </h1>
-    <nav aria-label="Month" className="flex flex-none items-center gap-1.5">
-      <IconButton aria-label="Previous month" onClick={onPrev}>
-        <ChevronLeftIcon />
-      </IconButton>
-      <PillButton onClick={onToday}>Today</PillButton>
-      <IconButton aria-label="Next month" onClick={onNext}>
-        <ChevronRightIcon />
-      </IconButton>
-    </nav>
+    <div className="flex flex-none items-center gap-3">
+      <ThemeToggle />
+      <nav aria-label="Month" className="flex flex-none items-center gap-1.5">
+        <IconButton aria-label="Previous month" onClick={onPrev}>
+          <ChevronLeftIcon />
+        </IconButton>
+        <PillButton onClick={onToday}>Today</PillButton>
+        <IconButton aria-label="Next month" onClick={onNext}>
+          <ChevronRightIcon />
+        </IconButton>
+      </nav>
+    </div>
   </div>
 );
 
@@ -107,7 +111,7 @@ export const MonthRevenue = ({ view, total }: { view: YearMonth; total: number }
       <span className="text-2xl font-medium tracking-label text-muted-foreground">
         {MONTH_NAMES[view.month]} revenue:{" "}
       </span>
-      <Money amount={total} className="text-amount-fluid font-bold tracking-display text-primary lg:text-display" />
+      <Money amount={total} className="text-amount-fluid font-bold tracking-display text-honey lg:text-display" />
     </div>
   </Card>
 );
