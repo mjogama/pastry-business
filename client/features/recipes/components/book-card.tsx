@@ -1,16 +1,9 @@
-import type { Ingredient, IngredientSection, Recipe } from "@common/modules/recipes";
+import type { Recipe } from "@common/modules/recipes";
 import { cn } from "@/lib/utils";
-import { cardIngredientSlots, compactTime, formatAmount, formatQuantity, formatTemperature } from "../lib/format";
+import { cardIngredientLayout, compactTime, formatAmount, formatQuantity, formatTemperature } from "../lib/format";
 import { BreadIcon } from "./icons";
 
-type Entry = { key: string; kind: "section"; name: string } | { key: string; kind: "item"; ing: Ingredient };
-
-/** Ingredients in order, with a heading entry before each named section. */
-const toEntries = (sections: IngredientSection[]): Entry[] =>
-  sections.flatMap((section, s): Entry[] => [
-    ...(section.name ? [{ key: `section-${s}`, kind: "section" as const, name: section.name }] : []),
-    ...section.ingredients.map((ing, i) => ({ key: `item-${s}-${i}`, kind: "item" as const, ing })),
-  ]);
+const plural = (n: number, word: string) => `${n} ${word}${n === 1 ? "" : "s"}`;
 
 /** Card front (§6.2). Sizes derive from the `--cw` CSS variable set on the stage. */
 export function BookCardFront({
@@ -24,11 +17,9 @@ export function BookCardFront({
   ch: number;
   multiplier?: number;
 }) {
-  const entries = toEntries(recipe.sections);
-  const shown = entries.slice(0, cardIngredientSlots(cw, ch, entries.length, Boolean(recipe.description)));
-  // Never end on a heading with nothing under it.
-  if (shown.at(-1)?.kind === "section") shown.pop();
-  const more = entries.filter((e) => e.kind === "item").length - shown.filter((e) => e.kind === "item").length;
+  const sections = recipe.sections.filter((section) => section.ingredients.length > 0);
+  const { counts, hiddenSections } = cardIngredientLayout(cw, ch, sections, Boolean(recipe.description));
+  const hiddenIngredients = sections.slice(counts.length).reduce((n, section) => n + section.ingredients.length, 0);
   const stats = [
     ["Temp", formatTemperature(recipe.temperature)],
     ["Est. Time", compactTime(recipe.time)],
@@ -50,11 +41,11 @@ export function BookCardFront({
             <BreadIcon className="size-4" />
           </span>
         </span>
-        <span className="truncate font-display text-[length:calc(var(--cw)*0.085)] leading-[1.12] font-bold text-foreground">
+        <span className="truncate font-display text-[length:min(calc(var(--cw)*0.085),34px)] leading-[1.12] font-bold text-foreground">
           {recipe.name}
         </span>
         {recipe.description && (
-          <span className="line-clamp-2 text-[length:clamp(11px,calc(var(--cw)*0.036),19px)] leading-[1.4] text-muted-foreground">
+          <span className="line-clamp-2 text-[length:clamp(11px,calc(var(--cw)*0.036),15px)] leading-[1.4] text-muted-foreground">
             {recipe.description}
           </span>
         )}
@@ -65,7 +56,7 @@ export function BookCardFront({
               <span className="block truncate text-nano font-bold tracking-[1.2px] text-muted-foreground uppercase">
                 {label}
               </span>
-              <span className="mt-0.5 block truncate text-[length:clamp(12px,calc(var(--cw)*0.04),21px)] font-bold text-foreground tabular">
+              <span className="mt-0.5 block truncate text-[length:clamp(12px,calc(var(--cw)*0.04),17px)] font-bold text-foreground tabular">
                 {value}
               </span>
             </span>
@@ -84,28 +75,40 @@ export function BookCardFront({
             ×{multiplier}
           </span>
         </span>
-        <span className="flex min-h-0 flex-col overflow-hidden text-[length:clamp(13px,calc(var(--cw)*0.042),22px)] leading-[1.35]">
-          {shown.length === 0 && <span className="text-label-sm text-foreground-faint">No ingredients yet.</span>}
-          {shown.map((entry) =>
-            entry.kind === "section" ? (
-              <span
-                key={entry.key}
-                className="pt-1.5 pb-0.5 text-nano font-bold tracking-[1.2px] text-muted-foreground uppercase"
-              >
-                {entry.name}
+        <span className="flex min-h-0 flex-col overflow-hidden text-[length:clamp(13px,calc(var(--cw)*0.042),17px)] leading-[1.35]">
+          {sections.length === 0 && <span className="text-label-sm text-foreground-faint">No ingredients yet.</span>}
+          {counts.map((count, s) => {
+            const section = sections[s];
+            const rest = section.ingredients.length - count;
+            return (
+              // biome-ignore lint/suspicious/noArrayIndexKey: sections have no stable id on the card
+              <span key={s} className="flex flex-col">
+                {section.name && (
+                  <span className="truncate pt-1.5 pb-0.5 text-nano font-bold tracking-[1.2px] text-muted-foreground uppercase">
+                    {section.name}
+                  </span>
+                )}
+                {section.ingredients.slice(0, count).map((ing, i) => (
+                  <span
+                    // biome-ignore lint/suspicious/noArrayIndexKey: ingredients have no id
+                    key={i}
+                    className="flex gap-2.5 border-b border-dashed border-border py-1.25"
+                  >
+                    <span className="w-[calc(var(--cw)*0.24)] shrink-0 truncate text-right font-semibold text-primary tabular">
+                      {formatAmount(ing.quantity * multiplier, ing.unit)}
+                    </span>
+                    <span className="min-w-0 truncate text-foreground-ingredient">{ing.ingredient_name}</span>
+                  </span>
+                ))}
+                {rest > 0 && (
+                  <span className="mt-1 text-micro text-muted-foreground">+{plural(rest, "ingredient")}</span>
+                )}
               </span>
-            ) : (
-              <span key={entry.key} className="flex gap-2.5 border-b border-dashed border-border py-1.25">
-                <span className="w-[calc(var(--cw)*0.24)] shrink-0 truncate text-right font-semibold text-primary tabular">
-                  {formatAmount(entry.ing.quantity * multiplier, entry.ing.unit)}
-                </span>
-                <span className="min-w-0 truncate text-foreground-ingredient">{entry.ing.ingredient_name}</span>
-              </span>
-            ),
-          )}
-          {more > 0 && (
-            <span className="mt-1.5 text-micro text-muted-foreground">
-              +{more} more ingredient{more === 1 ? "" : "s"}
+            );
+          })}
+          {hiddenSections > 0 && (
+            <span className="mt-1 text-micro text-muted-foreground">
+              +{plural(hiddenIngredients, "ingredient")} in {plural(hiddenSections, "more section")}
             </span>
           )}
         </span>
