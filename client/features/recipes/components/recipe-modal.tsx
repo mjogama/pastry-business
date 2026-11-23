@@ -5,8 +5,8 @@ import { MinusIcon, PencilIcon, PlusIcon, Trash2Icon, XIcon } from "lucide-react
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
+import { apiErrorMessage } from "@/lib/api/client";
 import { cn } from "@/lib/utils";
-import { recipeErrorMessage } from "../api";
 import { formatAmount, formatQuantity, formatTemperature, formatTime } from "../lib/format";
 
 export const MODAL_HEADING = "text-label font-bold tracking-[1.2px] text-muted-foreground uppercase";
@@ -79,7 +79,7 @@ function RecipeSpread({
     try {
       await onDelete();
     } catch (error) {
-      setDeleteError(recipeErrorMessage(error));
+      setDeleteError(apiErrorMessage(error));
       setDeleting(false);
     }
   };

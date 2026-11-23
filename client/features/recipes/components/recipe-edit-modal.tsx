@@ -15,9 +15,9 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { NativeSelect, NativeSelectOption } from "@/components/ui/native-select";
+import { apiErrorMessage } from "@/lib/api/client";
 import { newId } from "@/lib/id";
 import { cn } from "@/lib/utils";
-import { recipeErrorMessage } from "../api";
 import { INGREDIENT_UNITS, TEMPERATURE_UNITS, toIntegerInput, toNumberInput } from "../lib/format";
 import { ADD, AREA, AutoTextarea, Field, INPUT, REMOVE, UnitField } from "./edit-fields";
 import { MODAL_CONTENT, MODAL_HEADING, MODAL_OVERLAY, MODAL_PILL, StepNumber } from "./recipe-modal";
@@ -274,7 +274,7 @@ function EditForm({
     try {
       await onSave(build());
     } catch (error) {
-      setSaveError(recipeErrorMessage(error));
+      setSaveError(apiErrorMessage(error));
     } finally {
       setSaving(false);
     }

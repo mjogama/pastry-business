@@ -5,10 +5,10 @@ import { cn } from "@/lib/utils";
 
 import { HOLD_MS } from "../hooks/use-long-press";
 import type { GridDay } from "../lib/dates";
-import { dayLabel, formatShortDate } from "../lib/dates";
+import { dayLabel, formatShortDate, weekdayOf } from "../lib/dates";
 import { formatPeso } from "../lib/money";
 import type { DayGroup } from "../lib/totals";
-import { bakeLevel } from "../lib/totals";
+import { bakeLevel, dayProducts } from "../lib/totals";
 import { Money } from "./ui/primitives";
 
 export interface DayCellHandlers {
@@ -35,10 +35,16 @@ interface DayCellProps {
   handlers: DayCellHandlers;
 }
 
+/** Products listed before "+N more products". */
+const MAX_PRODUCTS = 3;
+
+const moreProducts = (n: number) => `+${n} more product${n === 1 ? "" : "s"}`;
+
 /**
- * One day (§7.3, §8.2) on a shadcn `Button` with no variant, so only the grid's own styling
- * applies. Phone: date, 🦆, holiday dot and compact total; titles move to the Day agenda.
- * Tablet: 1 title. Desktop: 2 titles. Product names are never shown here.
+ * One day (§7.3) on a shadcn `Button` with no variant, so only the grid's own styling applies.
+ * Same size on every device (`h-cell`, at least `cell-min` wide): titles, the first 3 products
+ * with quantities then "+N more products", holiday, 🦆 and the day total. On narrow screens the
+ * grid wraps to fewer columns instead of shrinking the cell (see `MonthGrid`).
  */
 export const DayCell = ({
   day,
@@ -53,9 +59,12 @@ export const DayCell = ({
   handlers,
 }: DayCellProps) => {
   const entries = group?.entries ?? [];
+  // A day normally has one title shared by all its entries (dayTitle); show each distinct one once.
+  const titles = [...new Set(entries.map((entry) => entry.title))];
   const total = group?.total ?? 0;
   const tint = bakeLevel(total, maxDayTotal);
   const label = dayLabel(day);
+  const products = group ? dayProducts(group) : [];
 
   return (
     <Button
@@ -76,52 +85,61 @@ export const DayCell = ({
       }
       className={cn(
         // Reset the shadcn button base for a grid cell
-        "hold-surface relative flex h-cell-compact min-w-0 flex-col items-stretch justify-start gap-0 overflow-hidden rounded-none border-0 border-r border-b border-solid border-border bg-transparent bg-clip-border text-left text-body-lg leading-prototype font-normal whitespace-normal text-foreground transition-none focus-visible:z-10 focus-visible:border-border active:not-aria-[haspopup]:translate-y-0",
-        "px-0.75 pt-1.5 pb-2 sm:gap-1 sm:px-2 lg:h-cell",
+        "hold-surface relative flex h-cell min-w-0 flex-col items-stretch justify-start gap-1 overflow-hidden rounded-none border-0 border-r border-b border-solid border-border bg-transparent bg-clip-border px-2 pt-1.5 pb-2 text-left text-body-lg leading-prototype font-normal whitespace-normal text-foreground transition-none focus-visible:z-10 focus-visible:border-border active:not-aria-[haspopup]:translate-y-0",
         isSelected ? "inset-ring-2 inset-ring-primary" : "hover:inset-ring hover:inset-ring-line-dashed",
-        !day.inMonth && "opacity-50",
+        // Days from the next or previous month only fill out the weeks of the full 7-column grid.
+        !day.inMonth && "hidden opacity-50 @min-[70rem]:flex",
       )}
     >
       <span className="flex flex-none items-start justify-between gap-2">
-        {/* Titles: left, 5px down so the first one sits level with the date */}
-        <span className="hidden min-w-0 flex-1 flex-col gap-1 pt-1.25 sm:flex">
-          {entries.slice(0, 2).map((entry, index) => (
-            <span
-              key={entry.id}
-              className={cn(
-                "truncate text-label leading-tight font-semibold text-foreground lg:text-cell",
-                index === 1 && "hidden lg:block",
-              )}
-            >
-              {entry.title}
+        {/* Titles and products: left, 5px down so the first title sits level with the date */}
+        <span className="flex min-w-0 flex-1 flex-col gap-1 pt-1.25">
+          {titles.slice(0, 2).map((title) => (
+            <span key={title} className="truncate text-cell leading-tight font-semibold text-foreground">
+              {title}
             </span>
           ))}
-          {entries.length > 1 && (
-            <span className="text-label-sm text-muted-foreground lg:hidden">+{entries.length - 1} more</span>
-          )}
-          {entries.length > 2 && (
-            <span className="hidden text-label-sm text-muted-foreground lg:block">+{entries.length - 2} more</span>
+          {titles.length > 2 && <span className="text-label-sm text-muted-foreground">+{titles.length - 2} more</span>}
+          {products.length > 0 && (
+            <span className="flex min-w-0 flex-col text-label-sm leading-4 text-muted-foreground">
+              {products.slice(0, MAX_PRODUCTS).map((product) => (
+                <span key={product.productName} className="flex min-w-0 gap-1">
+                  <span className="min-w-0 truncate">{product.productName}</span>
+                  <span className="tabular flex-none">×{product.quantity}</span>
+                </span>
+              ))}
+              {products.length > MAX_PRODUCTS && (
+                <span className="truncate font-semibold text-foreground-2">
+                  {moreProducts(products.length - MAX_PRODUCTS)}
+                </span>
+              )}
+            </span>
           )}
         </span>
 
-        {/* Date, then 🦆 under it */}
-        <span className="ml-auto flex flex-none flex-col items-end sm:gap-0.5 lg:gap-1.5">
-          {isToday ? (
-            <span className="tabular flex h-6 min-w-6 items-center justify-center rounded-pill bg-primary px-1 text-label font-bold text-primary-foreground sm:h-7.5 sm:min-w-7.5 sm:px-1.5 sm:text-cell">
-              {label}
+        {/* Weekday (only when the grid wraps, since there is no weekday header then), date, then 🦆 */}
+        <span className="ml-auto flex flex-none flex-col items-end gap-1.5">
+          <span className="flex items-center gap-1.5">
+            <span className="text-label-sm font-medium text-muted-foreground @min-[70rem]:hidden">
+              {weekdayOf(day.key)}
             </span>
-          ) : (
-            <span
-              className={cn(
-                "tabular flex h-6 items-center pr-0.5 text-label font-medium whitespace-nowrap sm:h-7.5 sm:text-cell",
-                day.inMonth ? "text-foreground" : "text-foreground-outside",
-              )}
-            >
-              {label}
-            </span>
-          )}
+            {isToday ? (
+              <span className="tabular flex h-7.5 min-w-7.5 items-center justify-center rounded-pill bg-primary px-1.5 text-cell font-bold text-primary-foreground">
+                {label}
+              </span>
+            ) : (
+              <span
+                className={cn(
+                  "tabular flex h-7.5 items-center pr-0.5 text-cell font-medium whitespace-nowrap",
+                  day.inMonth ? "text-foreground" : "text-foreground-outside",
+                )}
+              >
+                {label}
+              </span>
+            )}
+          </span>
           {total > 0 && (
-            <span aria-hidden="true" className="pr-0.5 text-body leading-none sm:text-sum-sm lg:text-sum">
+            <span aria-hidden="true" className="pr-0.5 text-sum leading-none">
               🦆
             </span>
           )}
@@ -129,27 +147,17 @@ export const DayCell = ({
       </span>
 
       {holiday && (
-        <span className="hidden flex-none truncate rounded-tag bg-holiday-bg px-1.75 py-0.5 text-nano font-medium text-holiday-text sm:block lg:text-micro">
+        <span className="flex-none truncate rounded-tag bg-holiday-bg px-1.75 py-0.5 text-micro font-medium text-holiday-text">
           {holiday}
         </span>
       )}
 
-      {/* Tablet and desktop: day total pinned to the bottom under a dashed rule */}
+      {/* Day total pinned to the bottom under a dashed rule */}
       {total > 0 && (
         <Money
           amount={total}
-          className="mt-auto hidden flex-none border-t border-dashed border-line-dashed pt-1 text-label font-bold text-foreground sm:block lg:text-cell"
+          className="mt-auto flex-none border-t border-dashed border-line-dashed pt-1 text-cell font-bold text-foreground"
         />
-      )}
-
-      {/* Phone: holiday dot and compact total */}
-      {(holiday || total > 0) && (
-        <span className="mt-auto flex min-w-0 flex-none items-center gap-0.75 sm:hidden">
-          {holiday && <span aria-hidden="true" className="size-1 flex-none rounded-pill bg-holiday-text" />}
-          {total > 0 && (
-            <Money amount={total} compact className="truncate text-micro leading-tight font-bold text-foreground" />
-          )}
-        </span>
       )}
 
       {isHolding && (

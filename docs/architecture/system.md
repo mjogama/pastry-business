@@ -8,13 +8,13 @@ server/src/app/        wiring, plain functions: server.ts (listen, shutdown), ap
                        middlewares/, routes/v1/routes.ts (mounts each module's router)
 server/src/shared/     @shared/*: errors/AppError.ts, http/response.ts (sendSuccess),
                        middlewares/validate.ts (validate({ body?, query?, params? })), logger.ts (pino; req.log)
-server/src/modules/    one folder per feature (classes): recipes/ (reference), health/ (/health, /ready)
+server/src/modules/    one folder per feature (classes): recipes/ (reference), sales-entry/, health/ (/health, /ready)
 server/prisma/         schema.prisma and migrations
 server/tests/          Vitest + Supertest
 client/app/            routes: (site)/ (/ and /menu), sales-tracker/, recipes/
 client/features/       menu, sales-tracker, recipes (each has a CLAUDE.md pointing to its story)
 client/components/     ui/ (shadcn), theme-toggle.tsx
-client/lib/            env.ts, theme.ts, api/client.ts (api.get/post/put/patch/delete, isApiError)
+client/lib/            env.ts, theme.ts, api/client.ts (api.get/post/put/patch/delete, isApiError, apiErrorMessage)
 shared/                types only (@common/*): http.ts (envelope), modules/<name>.ts (contracts)
 scripts/               new-module.mjs, remove-module.mjs
 ```
@@ -26,7 +26,7 @@ scripts/               new-module.mjs, remove-module.mjs
 3. Module: `validate(schemas)` → controller → service → repository → Prisma.
 4. Envelope: `{ success: true, statusCode, message, data }` or `{ success: false, statusCode, status, message, details?, requestId? }` (`shared/http.ts`).
 
-Today only `/recipes` uses the server. The menu uses seed data; the sales tracker uses `localStorage` (its database tables exist, no module yet).
+`/recipes` and `/sales-tracker` use the server; the menu uses seed data. Each server-backed page follows the same client shape: `features/<name>/api.ts` (calls), `lib/normalize.ts` (cleans responses), a `*-loader.tsx` server component inside `<Suspense>` that passes `null` on a failed load, and `apiErrorMessage()` for error text.
 
 ## Environment and deployment
 

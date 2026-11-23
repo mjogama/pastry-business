@@ -67,6 +67,7 @@
   --color-surface-2: var(--surface-2);
   --color-surface-inset: var(--surface-inset);
   --color-surface-note: var(--surface-note);
+  --color-surface-field: var(--surface-field);
   --color-line-dashed: var(--line-dashed);
   --color-foreground-2: var(--foreground-2);
   --color-foreground-faint: var(--foreground-faint);
@@ -115,7 +116,7 @@
   --text-amount-fluid: clamp(32px, 8vw, 44px);
   --text-amount-fluid--line-height: 1.05;
   --text-heading: 24px; /* side panel date */
-  --text-entry-title: 22px; /* popover title input */
+  --text-entry-title: 20px; /* popover title input */
   --text-sum: 20px; /* popover total, desktop 🦆 */
   --text-sum-sm: 18px; /* panel day total, tablet 🦆 */
   --text-body-lg: 16px;
@@ -137,7 +138,6 @@
   /* §5.3 Shape */
   --radius-pill: 999px;
   --radius-popover: 22px;
-  --radius-revenue: 24px; /* month revenue card on tablet and phone (§8.6) */
   --radius-card: 14px;
   --radius-control: 10px;
   --radius-tag: 6px;
@@ -151,16 +151,13 @@
   --spacing-section: 18px;
   --spacing-touch: 44px;
   --spacing-cell: 138px; /* day cell height, desktop and wide (§7.3) */
-  --spacing-cell-compact: 112px; /* phone + tablet; phones override §8.2's shorter cell so days are easy to tap and hold */
-  --spacing-revenue-w: 537px; /* month revenue pill (§7.5) */
-  --spacing-revenue-h: 106px;
+  --spacing-cell-min: 160px; /* narrowest day cell; 7 × this = 70rem, where the grid becomes a 7-column week */
   --spacing-drawer: min(460px, 100%); /* day detail panel (§7.6) */
   --spacing-drawer-tablet: min(420px, 60vw); /* §8.4 */
-  --spacing-popover: min(440px, calc(100vw - 24px)); /* entry popover (§7.7) */
+  --spacing-popover: min(320px, calc(100vw - 24px)); /* entry popover (§7.7) */
   --spacing-arrow: 18px;
 
   /* §8 Breakpoints: phone < sm (640) ≤ tablet < lg (1024) ≤ desktop < wide (1440) */
-  --breakpoint-rows: 35rem; /* 560px: product rows switch from mini cards to the 5-column grid */
   --breakpoint-wide: 90rem; /* 1440px */
   --container-content: 1600px;
 
@@ -369,6 +366,7 @@
   /* Spec tokens with no shadcn equivalent */
   --surface-2: #261e15;
   --surface-inset: #231c13;
+  --surface-field: #352a1c; /* filled entry-form fields, lighter than the popover */
   --surface-note: #1f1811;
   --line-dashed: #5d4a32;
   --foreground-2: #d4c2a4;
@@ -438,6 +436,7 @@
 
   --surface-2: #fffdf8;
   --surface-inset: #fff8ec;
+  --surface-field: #fbf1de; /* filled entry-form fields, darker than the popover */
   --surface-note: #fbf1de;
   --line-dashed: #d9c3a0;
   --foreground-2: #5a3f2c;

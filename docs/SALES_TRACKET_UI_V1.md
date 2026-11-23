@@ -1,5 +1,7 @@
 # Sales Tracker — Calendar Module · Context
 
+> **Superseded in places.** The built page differs from this spec in the header (§7.1, §8.1, §7.5, §8.6), day cell (§7.3, §8.2), day details (§7.6, §8.3, §8.4) and entry popover (§7.7). Where they disagree, `docs/architecture/sales-tracker.md` ("Differences from the design spec") wins.
+
 > **For the implementing agent:** this is the source of truth for the Sales Tracker calendar. Read the whole file before writing code. **Set up the design tokens (§5) and shared primitives (§6) first**, then build the screens from them. Never hardcode a color, font size, radius or spacing value that already exists as a token. The UI must match the reference prototype exactly.
 >
 > Reference prototype (interactive): https://claude.ai/artifact/MyB67TruKWgLNScZSXKPTE

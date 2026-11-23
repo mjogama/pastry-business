@@ -42,3 +42,30 @@ export const monthStats = (days: Map<DayKey, DayGroup>, prefix: string): MonthSt
 /** Bake-level tint alpha (§5.1): 0.05 + 0.20 × dayTotal / max day total of that day's month. */
 export const bakeLevel = (dayTotal: number, maxDayTotal: number) =>
   dayTotal > 0 && maxDayTotal > 0 ? 0.05 + (0.2 * dayTotal) / maxDayTotal : 0;
+
+/**
+ * A day has one title: set by its first entry, reused by later ones, renamed from the day panel.
+ * Older data can mix titles within a day; the latest entry's title wins. `exceptId` leaves out the
+ * entry being edited, so moving it to another day picks up that day's title.
+ */
+export const dayTitle = (group: DayGroup | undefined, exceptId?: string): string | undefined =>
+  group?.entries.filter((entry) => entry.id !== exceptId).at(-1)?.title;
+
+export interface ProductTally {
+  productName: string;
+  quantity: number;
+}
+
+/** Each product sold that day once (names matched case-insensitively), with its total quantity, in the order first sold. */
+export const dayProducts = (group: Pick<DayGroup, "entries">): ProductTally[] => {
+  const tallies = new Map<string, ProductTally>();
+  for (const entry of group.entries) {
+    for (const item of entry.items) {
+      const key = item.productName.toLowerCase();
+      const tally = tallies.get(key);
+      if (tally) tally.quantity += item.quantity;
+      else tallies.set(key, { productName: item.productName, quantity: item.quantity });
+    }
+  }
+  return [...tallies.values()];
+};

@@ -101,6 +101,9 @@ export const monthGrid = ({ year, month }: YearMonth): GridDay[] => {
 };
 
 /** `18`, or `Nov 1` on the first of a month, as in macOS Calendar (§7.3). */
+/** Short weekday name of a day, e.g. "Mon". */
+export const weekdayOf = (key: DayKey) => WEEKDAYS[new Date(`${key}T00:00:00Z`).getUTCDay()];
+
 export const dayLabel = (day: GridDay) =>
   day.dayOfMonth === 1 ? `${MONTH_NAMES[day.month].slice(0, 3)} 1` : String(day.dayOfMonth);
 
