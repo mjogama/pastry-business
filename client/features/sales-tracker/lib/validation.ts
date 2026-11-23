@@ -6,8 +6,8 @@ export const TITLE_MAX_LENGTH = 60;
 /**
  * §4 rules in order: date → title → each product (name → price > 0 → qty ≥ 1).
  * Returns the first error only, or null when the entry can be saved.
- * The form calls it before saving and the store calls it again before writing,
- * so the rule holds wherever an entry comes from.
+ * The form calls it before saving; the server re-checks every rule
+ * (`server/src/modules/sales-entry/sales-entry.schema.ts`).
  */
 export const firstEntryError = (input: CreateSalesEntryInput, now: LocalDateTime): string | null => {
   if (!isLocalDateTime(input.date)) return "Please pick a date and time.";
@@ -34,9 +34,3 @@ export const normalizeEntryInput = (input: CreateSalesEntryInput): CreateSalesEn
   note: input.note.trim(),
   items: input.items.map((item) => ({ ...item, productName: item.productName.trim() })),
 });
-
-export const entryValidationError = (message: string) =>
-  Object.assign(new Error(message), { name: "EntryValidationError" });
-
-export const isEntryValidationError = (error: unknown): error is Error =>
-  error instanceof Error && error.name === "EntryValidationError";

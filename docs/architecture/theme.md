@@ -8,6 +8,7 @@ One shared theme with **Butter Yellow** (light, default; `docs/COLOR_THEME_V1.md
 | Dark colors | `:root:has(.theme-dark-roast)` in `client/app/globals.css` |
 | Shadows | `--elev-*` in both blocks (light has no card shadows) |
 | Sizes, radii, spacing tokens | `@theme inline` in `globals.css`; add new names to `cn` in `client/lib/utils.ts` |
+| Filled form fields (Sales Tracker entry form) | `--surface-field` in both blocks (the popover is white in light mode, so `card` would be invisible) |
 | Fonts | `client/app/layout.tsx` |
 | Toggle, saved key, browser bar color | `client/components/theme-toggle.tsx`, `client/lib/theme.ts` (a pre-paint script sets `<html data-theme>`) |
 

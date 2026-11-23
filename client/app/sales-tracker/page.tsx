@@ -1,9 +1,10 @@
 import type { Metadata, Viewport } from "next";
+import { Suspense } from "react";
 
-import { SalesTracker } from "@/features/sales-tracker/components/sales-tracker";
+import { SalesTrackerLoader } from "@/features/sales-tracker/components/sales-tracker-loader";
 
 export const metadata: Metadata = {
-  title: "Sales Tracker",
+  title: "Sales Tracker · Pato's Pâtisserie",
   description: "Daily revenue calendar",
 };
 
@@ -13,5 +14,15 @@ export const viewport: Viewport = {
 };
 
 export default function SalesTrackerPage() {
-  return <SalesTracker />;
+  return (
+    <Suspense
+      fallback={
+        <main className="page-padding flex min-h-dvh flex-1 items-center justify-center text-label text-foreground-faint">
+          Loading sales…
+        </main>
+      }
+    >
+      <SalesTrackerLoader />
+    </Suspense>
+  );
 }

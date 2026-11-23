@@ -63,6 +63,7 @@ export const cn = createCn({
         "scrim-modal",
         "line-active",
         "surface-ghost",
+        "surface-field",
         "honey",
       ],
       font: ["display"],

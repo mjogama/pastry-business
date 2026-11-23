@@ -1,6 +1,6 @@
 import type { CreateRecipeInput, ListRecipesQuery, Recipe, UpdateRecipeInput } from "@common/modules/recipes";
 
-import { api, isApiError } from "@/lib/api/client";
+import { api } from "@/lib/api/client";
 
 import { normalizeRecipe, normalizeRecipes } from "./lib/normalize";
 
@@ -18,10 +18,3 @@ export const updateRecipe = async (id: string, input: UpdateRecipeInput) =>
 
 /** DELETE /recipes/:id */
 export const deleteRecipe = (id: string) => api.delete<null>(`/recipes/${id}`);
-
-/** A message to show the user for a failed request, including the first field error from validation. */
-export const recipeErrorMessage = (error: unknown) => {
-  if (!isApiError(error)) return "Something went wrong. Please try again.";
-  const [field] = Object.entries(error.fieldErrors);
-  return field ? `${error.message}: ${field[0]} ${field[1]}` : error.message;
-};

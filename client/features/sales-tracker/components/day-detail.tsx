@@ -2,7 +2,6 @@
 
 import { XIcon } from "lucide-react";
 
-import { Card } from "@/components/ui/card";
 import {
   Sheet,
   SheetClose,
@@ -13,11 +12,11 @@ import {
   SheetTitle,
 } from "@/components/ui/sheet";
 import { formatLongDate, formatTime12, timeOf } from "../lib/dates";
-import { holidayOf } from "../lib/holidays";
 import { lineRevenue } from "../lib/money";
 import type { DayGroup } from "../lib/totals";
-import { entryTotal } from "../lib/totals";
+import { dayTitle, entryTotal } from "../lib/totals";
 import type { DayKey, SalesEntry } from "../types";
+import { DayTitle } from "./day-title";
 import { DangerButton, IconButton, PrimaryButton, SecondaryButton } from "./ui/buttons";
 import { Money, scrimProps } from "./ui/primitives";
 
@@ -28,7 +27,15 @@ export interface DayDetailProps {
   onAdd: () => void;
   onEdit: (entry: SalesEntry) => void;
   onDelete: (entry: SalesEntry) => void;
+  /** Renames every entry of the day; throws when a request fails. */
+  onRename: (title: string) => Promise<void>;
 }
+
+/** The day's one title, editable here (new entries reuse it, so the entry form doesn't edit it). */
+const DayTitleRow = ({ group, onRename }: Pick<DayDetailProps, "group" | "onRename">) => {
+  const title = dayTitle(group);
+  return title ? <DayTitle key={title} title={title} onRename={onRename} /> : null;
+};
 
 /** 🦆 · Day total · amount (§7.6) */
 const DayTotalLine = ({ total }: { total: number }) => (
@@ -43,8 +50,9 @@ const DayTotalLine = ({ total }: { total: number }) => (
   </>
 );
 
-const EntryList = ({ group, isFuture, onEdit, onDelete }: Omit<DayDetailProps, "dayKey" | "onAdd">) => {
+const EntryList = ({ group, isFuture, onEdit, onDelete }: Omit<DayDetailProps, "dayKey" | "onAdd" | "onRename">) => {
   const entries = group?.entries ?? [];
+  const title = dayTitle(group);
   if (entries.length === 0) {
     return (
       <p className="my-7 text-center text-cell text-muted-foreground">
@@ -58,7 +66,10 @@ const EntryList = ({ group, isFuture, onEdit, onDelete }: Omit<DayDetailProps, "
         <li key={entry.id} className="flex flex-col gap-2.5 border-b border-dashed border-input py-4">
           <div className="flex items-start justify-between gap-3">
             <span className="flex min-w-0 flex-col gap-0.5">
-              <span className="text-body-lg font-semibold break-words text-foreground">{entry.title}</span>
+              {/* The day title is in the header; an entry shows its own only when it differs (older data). */}
+              {entry.title !== title && (
+                <span className="text-body-lg font-semibold break-words text-foreground">{entry.title}</span>
+              )}
               <span className="tabular text-label-sm font-medium tracking-time text-muted-foreground">
                 {formatTime12(timeOf(entry.date))}
               </span>
@@ -81,10 +92,20 @@ const EntryList = ({ group, isFuture, onEdit, onDelete }: Omit<DayDetailProps, "
             </p>
           )}
           <div className="flex justify-end gap-2">
-            <SecondaryButton size="sm" outline onClick={() => onEdit(entry)} aria-label={`Edit ${entry.title}`}>
+            <SecondaryButton
+              size="sm"
+              outline
+              onClick={() => onEdit(entry)}
+              aria-label={`Edit the ${formatTime12(timeOf(entry.date))} entry`}
+            >
               Edit
             </SecondaryButton>
-            <DangerButton size="sm" outline onClick={() => onDelete(entry)} aria-label={`Delete ${entry.title}`}>
+            <DangerButton
+              size="sm"
+              outline
+              onClick={() => onDelete(entry)}
+              aria-label={`Delete the ${formatTime12(timeOf(entry.date))} entry`}
+            >
               Delete
             </DangerButton>
           </div>
@@ -94,7 +115,7 @@ const EntryList = ({ group, isFuture, onEdit, onDelete }: Omit<DayDetailProps, "
   );
 };
 
-/** §7.6 day details as a shadcn Sheet: right-hand drawer on tablet and desktop. */
+/** §7.6 day details as a shadcn Sheet: right-hand drawer, full width on phones. */
 export const DayPanel = ({ open, onClose, ...props }: DayDetailProps & { open: boolean; onClose: () => void }) => {
   const total = props.group?.total ?? 0;
   return (
@@ -103,10 +124,10 @@ export const DayPanel = ({ open, onClose, ...props }: DayDetailProps & { open: b
         side="right"
         showCloseButton={false}
         overlayProps={scrimProps("panel", "Close day details")}
-        className="gap-0 border-border bg-surface-2 p-0 text-foreground shadow-none data-[side=right]:w-drawer-tablet data-[side=right]:sm:max-w-none lg:data-[side=right]:w-drawer"
+        className="gap-0 border-border bg-surface-2 p-0 text-foreground shadow-none data-[side=right]:w-full data-[side=right]:max-w-none sm:data-[side=right]:w-drawer-tablet lg:data-[side=right]:w-drawer"
       >
-        <SheetHeader className="flex-row items-start justify-between gap-3 border-b border-dashed border-input px-5.5 pt-[calc(22px+env(safe-area-inset-top))] pb-4">
-          <div className="flex min-w-0 flex-col gap-1.5">
+        <SheetHeader className="flex-row flex-wrap items-start justify-between gap-x-3 gap-y-1.5 border-b border-dashed border-input px-5.5 pt-[calc(22px+env(safe-area-inset-top))] pb-4">
+          <div className="flex min-w-0 flex-1 flex-col gap-1.5">
             <SheetTitle className="font-display text-heading font-semibold">{formatLongDate(props.dayKey)}</SheetTitle>
             <SheetDescription className="flex items-center gap-2 text-body">
               <DayTotalLine total={total} />
@@ -115,6 +136,10 @@ export const DayPanel = ({ open, onClose, ...props }: DayDetailProps & { open: b
           <SheetClose render={<IconButton aria-label="Close" />}>
             <XIcon />
           </SheetClose>
+          {/* Own full-width line under the date and close button, so its buttons reach the right edge. */}
+          <div className="w-full">
+            <DayTitleRow group={props.group} onRename={props.onRename} />
+          </div>
         </SheetHeader>
         <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-5.5 pt-2 pb-5.5">
           <EntryList {...props} />
@@ -128,38 +153,5 @@ export const DayPanel = ({ open, onClose, ...props }: DayDetailProps & { open: b
         )}
       </SheetContent>
     </Sheet>
-  );
-};
-
-/** §8.3: the phone's inline Day agenda (a shadcn Card). Everything the panel shows, plus the holiday name. */
-export const DayAgenda = (props: DayDetailProps) => {
-  const holiday = holidayOf(props.dayKey);
-  return (
-    <Card
-      id="day-agenda"
-      role="region"
-      aria-label={`Agenda for ${formatLongDate(props.dayKey)}`}
-      className="gap-0 rounded-card bg-surface-2 p-4 text-base text-foreground ring-1 ring-border"
-    >
-      <div className="flex flex-col gap-1.5 border-b border-dashed border-input pb-4">
-        <h2 className="m-0 font-display text-heading font-semibold text-foreground">{formatLongDate(props.dayKey)}</h2>
-        <p className="m-0 flex items-center gap-2 text-body text-muted-foreground">
-          <DayTotalLine total={props.group?.total ?? 0} />
-        </p>
-        {holiday && (
-          <span className="self-start rounded-tag bg-holiday-bg px-1.75 py-0.5 text-micro font-medium text-holiday-text">
-            {holiday}
-          </span>
-        )}
-      </div>
-      <EntryList {...props} />
-      {!props.isFuture && (
-        <div className="pt-4">
-          <PrimaryButton size="lg" onClick={props.onAdd}>
-            + Add entry for this day
-          </PrimaryButton>
-        </div>
-      )}
-    </Card>
   );
 };

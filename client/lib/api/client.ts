@@ -75,3 +75,10 @@ export const api = {
   patch: <T>(path: string, body?: unknown, options?: RequestOptions) => request<T>("PATCH", path, body, options),
   delete: <T>(path: string, options?: RequestOptions) => request<T>("DELETE", path, undefined, options),
 };
+
+/** A message to show the user for a failed request, including the first field error from validation. */
+export const apiErrorMessage = (error: unknown) => {
+  if (!isApiError(error)) return "Something went wrong. Please try again.";
+  const [field] = Object.entries(error.fieldErrors);
+  return field ? `${error.message}: ${field[0]} ${field[1]}` : error.message;
+};
