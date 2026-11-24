@@ -8,19 +8,24 @@ import type { BusinessSettings, MenuData } from "../types";
  * The menu's data source: `GET /menu` on the API.
  *
  * Cached for a few minutes so the static shell (top bar, titles, footer) prerenders and the API
- * isn't called for every visitor; an owner's edit shows up after the revalidate window. A failed
- * request throws, which `use cache` never stores. Anything that depends on today's date (sale
+ * isn't called for every visitor; an owner's edit shows up after the revalidate window. Anything that depends on today's date (sale
  * prices, picks) is derived per request, outside the cache.
  */
-const fetchMenu = async (): Promise<MenuData> => {
+const fetchMenu = async (): Promise<MenuData | null> => {
   "use cache";
   cacheLife({ stale: 300, revalidate: 300, expire: 3600 });
   cacheTag("menu");
-  return getMenu();
+  try {
+    return await getMenu();
+  } catch {
+    // A failure is answered, not thrown (a throw would fail the build), and rechecked sooner than a success.
+    cacheLife({ stale: 300, revalidate: 60, expire: 3600 });
+    return null;
+  }
 };
 
 /** `null` when the API can't be reached, so a page can say so instead of showing an empty menu. */
-export const getMenuData = () => fetchMenu().catch(() => null);
+export const getMenuData = () => fetchMenu();
 
 /** Falls back to the default name when the API can't be reached, so the chrome still renders. */
 export const getBusinessSettings = async (): Promise<BusinessSettings> =>
