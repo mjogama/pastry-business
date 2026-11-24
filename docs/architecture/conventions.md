@@ -1,6 +1,6 @@
 # Conventions
 
-- **Client:** no classes. Call the server only through `client/lib/api/client.ts`. Read `client/AGENTS.md` first: this Next.js version differs from training data.
+- **Client:** no classes. Call the server only through `client/lib/api/client.ts` (the one exception is auth, which uses axios in `client/lib/api/auth-client.ts`). Read `client/AGENTS.md` first: this Next.js version differs from training data.
 - **Server:** OOP only inside `src/modules/`, plain functions elsewhere. Throw `AppError` subclasses; never `try/catch` in controllers. Respond only through `sendSuccess`; only `globalErrorHandler` formats errors.
 - **shared/:** types only, imported with `import type`.
 - **Env vars:** add to `server/src/app/config/env.ts` or `client/lib/env.ts` plus the `.env.example`; test values in `server/vitest.config.ts`.

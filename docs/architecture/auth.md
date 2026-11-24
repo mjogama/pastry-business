@@ -1,0 +1,30 @@
+# Owner login (`/sc/auth/login`)
+
+Login only: a username and password, no signup, reset or logout. Sessions never expire unless a TTL env var is set. Spec: `docs/specs/2026-11-24-auth-login.md`.
+
+## How it works
+
+1. `/sc/auth/login` posts to `POST /api/v1/auth/login`. The server checks the bcrypt hash and sets two httpOnly cookies: `access_token` (path `/`) and `refresh_token` (path `/api/v1/auth`). Both are JWTs with no `exp` unless `JWT_ACCESS_TTL_SECONDS` / `JWT_REFRESH_TTL_SECONDS` is set.
+2. `requireAuth` guards the write routes (POST/PUT/DELETE) of `/recipes` and `/sales-entries`. Reads stay public.
+3. `RequireAuth` wraps the `/recipes` and `/sales-tracker` layouts. It calls `GET /auth/me`, and sends anyone without a session to `/sc/auth/login?next=<path>`.
+4. On a 401, `lib/api/auth-client.ts` calls `POST /auth/refresh` once (one request at a time) and retries. The fetch `api` client in `client.ts` does the same in the browser. If refresh fails, the owner goes to the login page.
+
+Accounts are rows in the `users` table, inserted directly in the database. `passwordHash` is a bcrypt hash (`bcryptjs`; `bcrypt.hashSync("password", 10)`).
+
+## Where to change what
+
+| To change | Edit |
+| --- | --- |
+| Token signing, cookie names, expiry | `server/src/shared/auth/tokens.ts`; TTL env vars in `server/src/app/config/env.ts` |
+| Cookie flags (`SameSite`, `Secure`, path) | `cookieOptions` in `server/src/modules/auth/auth.controller.ts` |
+| Login rules | `server/src/modules/auth/auth.service.ts` |
+| Which routes need a session | `requireAuth` in each module's `*.routes.ts` |
+| Login page | `client/features/auth/components/login-form.tsx`, `client/app/sc/auth/login/` |
+| Client gate | `client/features/auth/components/require-auth.tsx` and the owner page layouts |
+| Refresh and redirect | `client/lib/api/auth-client.ts` (the only axios code) |
+
+## Notes
+
+- Production needs `JWT_ACCESS_SECRET` and `JWT_REFRESH_SECRET` (32+ chars each, different) on Railway, and the migration applied.
+- The client (Vercel) and API (Railway) are different sites, so cookies are `SameSite=None; Secure` in production. Browsers that block third-party cookies will not keep the session; the fix is a shared parent domain or a proxy.
+- The page gate is client-side. The pages' server-rendered data comes from public GET routes, so the real protection is `requireAuth` on writes.

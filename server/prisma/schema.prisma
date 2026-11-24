@@ -114,3 +114,64 @@ model SalesItem {
   @@index([productName])
   @@map("sales_items")
 }
+
+/// shared/modules/auth.ts `AuthUser`. Rows are inserted directly in the database; `passwordHash` is a bcrypt hash.
+model User {
+  id           String   @id @default(uuid(7))
+  username     String   @unique @db.VarChar(60)
+  passwordHash String
+  createdAt    DateTime @default(now()) @db.Timestamptz(3)
+  updatedAt    DateTime @updatedAt @db.Timestamptz(3)
+
+  @@map("users")
+}
+
+/// shared/modules/category.ts `Category`.
+model Category {
+  id        String    @id @default(uuid(7))
+  name      String    @unique @db.VarChar(60)
+  sortOrder Int       @default(0)
+  products  Product[]
+  createdAt DateTime  @default(now()) @db.Timestamptz(3)
+  updatedAt DateTime  @updatedAt @db.Timestamptz(3)
+
+  @@map("categories")
+}
+
+/// shared/modules/product.ts `Product`. `price` and `discountPrice` are PHP.
+model Product {
+  id               String    @id @default(uuid(7))
+  name             String    @db.VarChar(60)
+  categoryId       String
+  /// A category with products can't be deleted.
+  category         Category  @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+  shortDescription String    @db.VarChar(120)
+  description      String?
+  /// Cloudinary URL.
+  imageUrl         String?
+  price            Decimal   @db.Decimal(10, 2)
+  discountPrice    Decimal?  @db.Decimal(10, 2)
+  /// Last sale day (Manila), a calendar date.
+  discountEndsAt   DateTime? @db.Date
+  isAvailable      Boolean   @default(true)
+  isFeatured       Boolean   @default(false)
+  sortOrder        Int       @default(0)
+  isArchived       Boolean   @default(false)
+  createdAt        DateTime  @default(now()) @db.Timestamptz(3)
+  updatedAt        DateTime  @updatedAt @db.Timestamptz(3)
+
+  @@index([categoryId])
+  @@map("products")
+}
+
+/// shared/modules/menu.ts `BusinessSettings`. A single row with the id "singleton".
+model BusinessSettings {
+  id            String   @id @default("singleton")
+  businessName  String   @db.VarChar(60)
+  tagline       String
+  contactNumber String
+  heroImageUrl  String?
+  updatedAt     DateTime @updatedAt @db.Timestamptz(3)
+
+  @@map("business_settings")
+}

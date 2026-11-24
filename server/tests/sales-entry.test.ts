@@ -3,6 +3,7 @@ import { randomUUID } from "node:crypto";
 import { createApp } from "@app/app";
 import request from "supertest";
 import { describe, expect, it } from "vitest";
+import { authCookie } from "./helpers";
 
 const app = createApp();
 
@@ -19,7 +20,7 @@ describe("sales entry module", () => {
     await request(app).get("/api/v1/sales-entries/not-a-uuid").expect(400);
     await request(app).get("/api/v1/sales-entries?from=2026-13-01").expect(400);
     await request(app).get("/api/v1/sales-entries?from=2026-11-30&to=2026-11-01").expect(400);
-    await request(app).delete("/api/v1/sales-entries/not-a-uuid").expect(400);
+    await request(app).delete("/api/v1/sales-entries/not-a-uuid").set("Cookie", authCookie()).expect(400);
   });
 
   it.each([
@@ -34,6 +35,7 @@ describe("sales entry module", () => {
   ])("rejects a bad %s with field-level details", async (path, patch) => {
     const res = await request(app)
       .post("/api/v1/sales-entries")
+      .set("Cookie", authCookie())
       .send({ ...valid, ...patch });
 
     expect(res.status).toBe(400);
@@ -44,6 +46,7 @@ describe("sales entry module", () => {
   it("validates the body on update too", async () => {
     await request(app)
       .put(`/api/v1/sales-entries/${randomUUID()}`)
+      .set("Cookie", authCookie())
       .send({ ...valid, items: [] })
       .expect(400);
   });

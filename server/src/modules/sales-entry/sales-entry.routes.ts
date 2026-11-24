@@ -1,6 +1,7 @@
 import { Router } from "express";
 
 import { validate } from "@shared/middlewares/validate";
+import { requireAuth } from "@shared/middlewares/requireAuth";
 import type { SalesEntryController } from "./sales-entry.controller";
 import {
   getSalesEntrySchemas,
@@ -18,8 +19,8 @@ export class SalesEntryRouter {
     // Before "/:id", so "product-suggestions" is not read as an id.
     this.router.get("/product-suggestions", controller.productSuggestions);
     this.router.get("/:id", validate(getSalesEntrySchemas), controller.getById);
-    this.router.post("/", validate(createSalesEntrySchemas), controller.create);
-    this.router.put("/:id", validate(updateSalesEntrySchemas), controller.update);
-    this.router.delete("/:id", validate(deleteSalesEntrySchemas), controller.delete);
+    this.router.post("/", requireAuth, validate(createSalesEntrySchemas), controller.create);
+    this.router.put("/:id", requireAuth, validate(updateSalesEntrySchemas), controller.update);
+    this.router.delete("/:id", requireAuth, validate(deleteSalesEntrySchemas), controller.delete);
   }
 }

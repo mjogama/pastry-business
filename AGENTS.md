@@ -34,4 +34,6 @@ Loaded when you open files in that folder (each folder's `CLAUDE.md` imports its
 | Recipe Book `/recipes` | `client/features/recipes/` | `docs/architecture/recipes.md` |
 | Menu `/menu` and Landing `/` | `client/features/menu/` | `docs/architecture/menu.md` |
 | Sales Tracker `/sales-tracker` | `client/features/sales-tracker/` | `docs/architecture/sales-tracker.md` |
+| CMS `/cms` | `client/features/admin/` | `docs/architecture/admin.md` |
+| Owner login `/sc/auth/login` | `client/features/auth/` | `docs/architecture/auth.md` |
 | Server, layout, request path, deployment | `server/` | `docs/architecture/system.md` |

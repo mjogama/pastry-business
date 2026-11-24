@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { Suspense } from "react";
 import { MenuContent } from "@/features/menu/components/menu-content";
 import { CONTAINER, SiteFooter, SiteTopBar } from "@/features/menu/components/site-chrome";
-import { MenuSkeleton } from "@/features/menu/components/skeletons";
+import { FooterSkeleton, MenuSkeleton, TopBarSkeleton } from "@/features/menu/components/skeletons";
 import { getBusinessSettings } from "@/features/menu/data/menu-data";
 import { cn } from "@/lib/utils";
 
@@ -15,7 +15,9 @@ export async function generateMetadata(): Promise<Metadata> {
 export default function MenuPage({ searchParams }: PageProps<"/menu">) {
   return (
     <>
-      <SiteTopBar page="menu" />
+      <Suspense fallback={<TopBarSkeleton page="menu" />}>
+        <SiteTopBar page="menu" />
+      </Suspense>
       <main className={cn(CONTAINER, "flex flex-1 flex-col gap-7 pt-7 pb-page-end")}>
         <div className="flex flex-col gap-2">
           <h1 className="font-display text-menu-title font-bold tracking-menu-title text-foreground">Menu</h1>
@@ -25,7 +27,9 @@ export default function MenuPage({ searchParams }: PageProps<"/menu">) {
           <MenuContent searchParams={searchParams} />
         </Suspense>
       </main>
-      <SiteFooter />
+      <Suspense fallback={<FooterSkeleton />}>
+        <SiteFooter />
+      </Suspense>
     </>
   );
 }

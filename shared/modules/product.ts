@@ -38,4 +38,10 @@ export interface ListProductsQuery {
 
 export type CreateProductInput = Omit<Product, "id">;
 
-export type UpdateProductInput = Partial<CreateProductInput>;
+/** Optional fields a `PATCH` can clear by sending `null`. */
+type ClearableProductKey = "description" | "imageUrl" | "discountPrice" | "discountEndsAt";
+
+/** Only the fields sent change; `null` clears an optional field. */
+export type UpdateProductInput = Partial<
+  Omit<CreateProductInput, ClearableProductKey> & { [K in ClearableProductKey]: CreateProductInput[K] | null }
+>;

@@ -7,12 +7,12 @@ import { buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
 import { getBusinessSettings } from "../data/menu-data";
+import { CONTAINER } from "../lib/layout";
 import { formatLocalPhone, telHref } from "../lib/phone";
 import { manilaToday } from "../lib/pricing";
 import { PhoneIcon } from "./icons";
 
-/** The 1280px content column with 24px sides plus safe areas (§5). */
-export const CONTAINER = "mx-auto w-full max-w-menu menu-gutter";
+export { CONTAINER };
 
 /**
  * Business name (Fraunces 22/700) linking to `/`, and a pill to the other page: **Menu** on the
@@ -74,16 +74,18 @@ export const SiteFooter = async () => {
             {businessName}
           </span>
         </div>
-        <a
-          href={telHref(contactNumber)}
-          className={cn(buttonVariants({ variant: "call-outline", size: "footer-call" }))}
-        >
-          <PhoneIcon className="text-honey" />
-          <span className="flex flex-col leading-tight">
-            <span className="text-label-sm font-normal text-muted-foreground">Call us</span>
-            <span className="tabular text-body-lg font-semibold">{formatLocalPhone(contactNumber)}</span>
-          </span>
-        </a>
+        {contactNumber && (
+          <a
+            href={telHref(contactNumber)}
+            className={cn(buttonVariants({ variant: "call-outline", size: "footer-call" }))}
+          >
+            <PhoneIcon className="text-honey" />
+            <span className="flex flex-col leading-tight">
+              <span className="text-label-sm font-normal text-muted-foreground">Call us</span>
+              <span className="tabular text-body-lg font-semibold">{formatLocalPhone(contactNumber)}</span>
+            </span>
+          </a>
+        )}
       </div>
     </footer>
   );
