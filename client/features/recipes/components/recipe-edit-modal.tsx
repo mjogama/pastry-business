@@ -18,7 +18,15 @@ import { NativeSelect, NativeSelectOption } from "@/components/ui/native-select"
 import { apiErrorMessage } from "@/lib/api/client";
 import { newId } from "@/lib/id";
 import { cn } from "@/lib/utils";
-import { INGREDIENT_UNITS, TEMPERATURE_UNITS, toIntegerInput, toNumberInput } from "../lib/format";
+import {
+  amountInput,
+  INGREDIENT_UNITS,
+  parseAmount,
+  TEMPERATURE_UNITS,
+  toAmountInput,
+  toIntegerInput,
+  unitLabel,
+} from "../lib/format";
 import { ADD, AREA, AutoTextarea, Field, INPUT, REMOVE, UnitField } from "./edit-fields";
 import { MODAL_CONTENT, MODAL_HEADING, MODAL_OVERLAY, MODAL_PILL, StepNumber } from "./recipe-modal";
 
@@ -117,7 +125,7 @@ function EditForm({
       ...section.ingredients.map((ing) => ({
         key: newKey(),
         kind: "item" as const,
-        quantity: ing.quantity.toString(),
+        quantity: amountInput(ing.quantity),
         unit: ing.unit,
         ingredient_name: ing.ingredient_name,
       })),
@@ -219,7 +227,11 @@ function EditForm({
     else setSteps((r) => reorder(r, key, to));
   };
 
-  const canSave = details.name.trim() !== "";
+  // An amount must be empty or readable (`1/2`, `1 1/2`, `0.5`); `1/` or `1/0` blocks saving.
+  const amountsValid = rows.every(
+    (r) => r.kind !== "item" || r.quantity.trim() === "" || parseAmount(r.quantity) !== undefined,
+  );
+  const canSave = details.name.trim() !== "" && amountsValid;
 
   const build = (): Recipe => {
     const quantity = toNumber(details.quantity);
@@ -233,7 +245,7 @@ function EditForm({
         sections.push(current);
         continue;
       }
-      const quantity = toNumber(row.quantity);
+      const quantity = parseAmount(row.quantity);
       const ingredient_name = row.ingredient_name.trim();
       if (quantity === undefined && !ingredient_name) continue;
       if (!current) {
@@ -453,11 +465,11 @@ function EditForm({
                 <Input
                   aria-label={`Ingredient ${i + 1} quantity`}
                   autoFocus={row.key === focusKey}
-                  inputMode="decimal"
+                  inputMode="text"
                   value={row.quantity}
                   placeholder="0"
-                  onChange={(e) => updateRow(row.key, { quantity: toNumberInput(e.target.value) })}
-                  className={cn(INPUT, "w-16 shrink-0 px-2 text-center font-semibold text-honey tabular")}
+                  onChange={(e) => updateRow(row.key, { quantity: toAmountInput(e.target.value) })}
+                  className={cn(INPUT, "w-20 shrink-0 px-2 text-center font-semibold text-honey tabular")}
                 />
                 <NativeSelect
                   aria-label={`Ingredient ${i + 1} unit`}
@@ -467,7 +479,7 @@ function EditForm({
                 >
                   {INGREDIENT_UNITS.map((u) => (
                     <NativeSelectOption key={u} value={u}>
-                      {u}
+                      {unitLabel(u)}
                     </NativeSelectOption>
                   ))}
                 </NativeSelect>

@@ -24,7 +24,7 @@ Paths are under `client/features/menu/` unless shown in full.
 
 ## Rules that must stay true
 
-- **Sale:** while `0 < discountPrice < price` and today ≤ `discountEndsAt`; it ends by itself the next day.
+- **Sale:** `discountPrice` is the amount taken off (₱40 with ₱15 off sells for ₱25, ₱40 struck). On sale while `0 < discountPrice < price` and today ≤ `discountEndsAt`; it ends by itself the next day.
 - **Out of stock:** still shown, dimmed, greyscale, last in its category; the sheet still opens. Never in Today's picks.
 - **Picks:** up to 4, featured first, then available on-sale items; the section hides when empty.
 - **Sort:** available first, then `sortOrder`. Empty categories and archived products are hidden. Missing images get a placeholder.

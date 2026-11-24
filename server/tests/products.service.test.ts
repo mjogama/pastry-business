@@ -91,6 +91,13 @@ describe("ProductsService", () => {
     expect(cleared.discountEndsAt).toBeUndefined();
   });
 
+  it("drops the end date when the discount price is removed", async () => {
+    const product = await service.create({ ...base, discountPrice: 69, discountEndsAt: "2026-11-23" });
+    const cleared = await service.update(product.id, { discountPrice: null });
+    expect(cleared.discountPrice).toBeUndefined();
+    expect(cleared.discountEndsAt).toBeUndefined();
+  });
+
   it("404s on a missing product and deletes an existing one", async () => {
     await expect(service.getById(randomUUID())).rejects.toBeInstanceOf(NotFoundError);
     const product = await service.create(base);
