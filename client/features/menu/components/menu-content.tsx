@@ -16,7 +16,20 @@ const first = (value: string | string[] | undefined) => (Array.isArray(value) ? 
  */
 export const MenuContent = async ({ searchParams }: { searchParams: PageProps<"/menu">["searchParams"] }) => {
   await io();
-  const [{ settings, categories, products }, query] = await Promise.all([getMenuData(), searchParams]);
+  const [menu, query] = await Promise.all([getMenuData(), searchParams]);
+  if (!menu) {
+    return (
+      <p className="py-10 text-body-lg text-muted-foreground">
+        The menu can’t be loaded right now. Please try again soon.
+      </p>
+    );
+  }
+  const { settings, categories, products } = menu;
+  if (products.length === 0) {
+    return (
+      <p className="py-10 text-body-lg text-muted-foreground">Our menu is being updated. Please check back soon.</p>
+    );
+  }
   const sections = buildSections(categories, products, manilaToday());
   const requested = first(query.c);
   const initialCategory = sections.some((section) => section.category.id === requested) ? (requested as string) : ALL;
@@ -53,8 +66,9 @@ export const MenuContent = async ({ searchParams }: { searchParams: PageProps<"/
 /** Landing "Today's picks" (§7.1). Hidden when nothing qualifies (§4). */
 export const TodaysPicks = async () => {
   await io();
-  const { categories, products } = await getMenuData();
-  const picks = todaysPicks(categories, products, manilaToday());
+  const menu = await getMenuData();
+  if (!menu) return null;
+  const picks = todaysPicks(menu.categories, menu.products, manilaToday());
   if (picks.length === 0) return null;
   return (
     <section aria-labelledby="picks-title" className="flex flex-col gap-5.5">

@@ -17,6 +17,13 @@ const BODY = "flex w-full min-w-0 flex-col gap-2 px-4 pt-4 pb-4.5";
  */
 export const ProductCard = ({ product }: { product: ProductView }) => (
   <ProductCardButton productId={product.id} label={product.ariaLabel} isAvailable={product.isAvailable}>
+    <ProductCardContent product={product} />
+  </ProductCardButton>
+);
+
+/** What is inside a menu card; the CMS draws the same content around its own controls. */
+export const ProductCardContent = ({ product }: { product: ProductView }) => (
+  <>
     <ProductImage product={product} variant="card" />
     <span className={BODY}>
       <span className="truncate text-card-title font-semibold text-foreground">{product.name}</span>
@@ -26,7 +33,7 @@ export const ProductCard = ({ product }: { product: ProductView }) => (
       <PriceBlock product={product} className="pt-0.5" />
       <AvailabilityTag isAvailable={product.isAvailable} />
     </span>
-  </ProductCardButton>
+  </>
 );
 
 /**
@@ -43,11 +50,18 @@ export const PickCard = ({ product }: { product: ProductView }) => {
         "transition-[transform,border-color] duration-150 hover:-translate-y-0.5 hover:border-line-dashed motion-reduce:transition-none motion-reduce:hover:translate-y-0",
       )}
     >
-      <ProductImage product={product} variant="pick" />
-      <span className={BODY}>
-        <span className="truncate text-card-title font-semibold">{product.name}</span>
-        <PriceBlock product={product} variant="pick" />
-      </span>
+      <PickCardContent product={product} />
     </Link>
   );
 };
+
+/** What is inside a Today's picks card; the CMS draws the same content around its own controls. */
+export const PickCardContent = ({ product }: { product: ProductView }) => (
+  <>
+    <ProductImage product={product} variant="pick" />
+    <span className={BODY}>
+      <span className="truncate text-card-title font-semibold">{product.name}</span>
+      <PriceBlock product={product} variant="pick" />
+    </span>
+  </>
+);

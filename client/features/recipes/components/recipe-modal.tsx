@@ -13,7 +13,7 @@ export const MODAL_HEADING = "text-label font-bold tracking-[1.2px] text-muted-f
 export const MODAL_PILL = "h-touch gap-1.5 rounded-pill px-4 text-body font-medium";
 export const MODAL_OVERLAY = { className: "bg-scrim-modal supports-backdrop-filter:backdrop-blur-none" };
 export const MODAL_CONTENT =
-  "flex max-h-[calc(100dvh-32px)] max-w-[calc(100%-2rem)] flex-col gap-0 overflow-hidden rounded-sheet border border-input bg-surface-2 p-0 text-base text-foreground shadow-modal ring-0";
+  "flex max-h-[calc(100dvh-32px)] max-w-[calc(100%-2rem)] flex-col gap-0 overflow-hidden rounded-sheet border border-input bg-surface-2 p-0 text-base text-foreground ring-0";
 
 const MIN_MULTIPLIER = 1;
 const MAX_MULTIPLIER = 6;
@@ -151,7 +151,7 @@ function RecipeSpread({
       )}
 
       <div className="grid grid-cols-1 min-[761px]:grid-cols-2">
-        <section className="flex flex-col gap-4 px-5 pt-5 pb-6 min-[761px]:gap-4.5 min-[761px]:px-7.5 min-[761px]:pt-6 min-[761px]:pb-7.5 min-[761px]:shadow-[inset_-18px_0_24px_-18px_rgba(0,0,0,.6)]">
+        <section className="flex flex-col gap-4 px-5 pt-5 pb-6 min-[761px]:gap-4.5 min-[761px]:px-7.5 min-[761px]:pt-6 min-[761px]:pb-7.5">
           <DialogTitle className="font-display text-[30px] leading-[1.1] font-bold min-[761px]:text-[clamp(28px,4vw,38px)]">
             {recipe.name}
           </DialogTitle>
@@ -239,7 +239,7 @@ function RecipeSpread({
         <section
           className={cn(
             "flex flex-col gap-4 border-t border-dashed border-input px-5 pt-6 pb-6",
-            "min-[761px]:gap-4.5 min-[761px]:border-t-0 min-[761px]:border-l min-[761px]:border-solid min-[761px]:border-border min-[761px]:px-7.5 min-[761px]:pt-6 min-[761px]:pb-7.5 min-[761px]:shadow-[inset_18px_0_24px_-18px_rgba(0,0,0,.6)]",
+            "min-[761px]:gap-4.5 min-[761px]:border-t-0 min-[761px]:border-l min-[761px]:border-solid min-[761px]:border-border min-[761px]:px-7.5 min-[761px]:pt-6 min-[761px]:pb-7.5",
           )}
         >
           <h3 className={cn(MODAL_HEADING, "min-[761px]:hidden")}>Steps</h3>

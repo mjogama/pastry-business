@@ -1,30 +1,10 @@
-import type { ApiResponse, FieldError } from "@common/http";
+import type { ApiResponse } from "@common/http";
 import { env } from "@/lib/env";
 
-/** Thrown for every failed request, so callers handle one error type. Check it with `isApiError`. */
-export interface ApiError extends Error {
-  name: "ApiError";
-  statusCode: number;
-  details: unknown;
-  requestId: string | undefined;
-  fieldErrors: Record<string, string>;
-}
+import { redirectToLogin, refreshSession } from "./auth-client";
+import { createApiError } from "./errors";
 
-const toFieldErrors = (details: unknown): Record<string, string> =>
-  Array.isArray(details)
-    ? Object.fromEntries((details as FieldError[]).map((error) => [error.path, error.message]))
-    : {};
-
-const createApiError = (message: string, statusCode: number, details?: unknown, requestId?: string): ApiError =>
-  Object.assign(new Error(message), {
-    name: "ApiError" as const,
-    statusCode,
-    details,
-    requestId,
-    fieldErrors: toFieldErrors(details),
-  });
-
-export const isApiError = (error: unknown): error is ApiError => error instanceof Error && error.name === "ApiError";
+export { type ApiError, apiErrorMessage, createApiError, isApiError } from "./errors";
 
 type Query = Record<string, string | number | boolean | undefined>;
 
@@ -40,7 +20,13 @@ const buildUrl = (path: string, query?: Query) => {
   return url;
 };
 
-const request = async <T>(method: string, path: string, body?: unknown, options: RequestOptions = {}) => {
+const request = async <T>(
+  method: string,
+  path: string,
+  body?: unknown,
+  options: RequestOptions = {},
+  retried = false,
+): Promise<T> => {
   const { query, headers, ...init } = options;
 
   let response: Response;
@@ -62,6 +48,11 @@ const request = async <T>(method: string, path: string, body?: unknown, options:
 
   if (!payload) throw createApiError(response.statusText || "Invalid response", response.status);
   if (!payload.success) {
+    // In the browser, an expired session is refreshed once and the request retried.
+    if (payload.statusCode === 401 && !retried && typeof window !== "undefined") {
+      if (await refreshSession()) return request<T>(method, path, body, options, true);
+      redirectToLogin();
+    }
     throw createApiError(payload.message, payload.statusCode, payload.details, payload.requestId);
   }
 
@@ -74,11 +65,4 @@ export const api = {
   put: <T>(path: string, body?: unknown, options?: RequestOptions) => request<T>("PUT", path, body, options),
   patch: <T>(path: string, body?: unknown, options?: RequestOptions) => request<T>("PATCH", path, body, options),
   delete: <T>(path: string, options?: RequestOptions) => request<T>("DELETE", path, undefined, options),
-};
-
-/** A message to show the user for a failed request, including the first field error from validation. */
-export const apiErrorMessage = (error: unknown) => {
-  if (!isApiError(error)) return "Something went wrong. Please try again.";
-  const [field] = Object.entries(error.fieldErrors);
-  return field ? `${error.message}: ${field[0]} ${field[1]}` : error.message;
 };

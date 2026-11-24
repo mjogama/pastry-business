@@ -1,6 +1,7 @@
 import cors from "cors";
 import helmet from "helmet";
 import compression from "compression";
+import cookieParser from "cookie-parser";
 import express, { type Express } from "express";
 
 import { registerRoutes } from "./routes";
@@ -32,6 +33,7 @@ export const createApp = (config: Env = env): Express => {
   app.use(healthModule.router);
 
   app.use(createRateLimiter(config));
+  app.use(cookieParser());
   app.use(express.json({ limit: config.BODY_LIMIT }));
   app.use(express.urlencoded({ limit: config.BODY_LIMIT, extended: true }));
   app.use(compression());

@@ -8,7 +8,7 @@ server/src/app/        wiring, plain functions: server.ts (listen, shutdown), ap
                        middlewares/, routes/v1/routes.ts (mounts each module's router)
 server/src/shared/     @shared/*: errors/AppError.ts, http/response.ts (sendSuccess),
                        middlewares/validate.ts (validate({ body?, query?, params? })), logger.ts (pino; req.log)
-server/src/modules/    one folder per feature (classes): recipes/ (reference), sales-entry/, health/ (/health, /ready)
+server/src/modules/    one folder per feature (classes): recipes/ (reference), sales-entry/, auth/, categories/, products/, menu/ (`GET /menu`, settings), media/ (Cloudinary uploads), health/ (/health, /ready)
 server/prisma/         schema.prisma and migrations
 server/tests/          Vitest + Supertest
 client/app/            routes: (site)/ (/ and /menu), sales-tracker/, recipes/
@@ -26,7 +26,7 @@ scripts/               new-module.mjs, remove-module.mjs
 3. Module: `validate(schemas)` → controller → service → repository → Prisma.
 4. Envelope: `{ success: true, statusCode, message, data }` or `{ success: false, statusCode, status, message, details?, requestId? }` (`shared/http.ts`).
 
-`/recipes` and `/sales-tracker` use the server; the menu uses seed data. Each server-backed page follows the same client shape: `features/<name>/api.ts` (calls), `lib/normalize.ts` (cleans responses), a `*-loader.tsx` server component inside `<Suspense>` that passes `null` on a failed load, and `apiErrorMessage()` for error text.
+`/recipes`, `/sales-tracker`, `/` and `/menu` use the server. Each server-backed page follows the same client shape: `features/<name>/api.ts` (calls), `lib/normalize.ts` (cleans responses), a `*-loader.tsx` server component inside `<Suspense>` that passes `null` on a failed load, and `apiErrorMessage()` for error text.
 
 ## Environment and deployment
 

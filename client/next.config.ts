@@ -5,6 +5,8 @@ const nextConfig: NextConfig = {
   // SERVER_API before `next build`; changing it later needs a rebuild. Read through lib/env.ts.
   env: { SERVER_API: process.env.SERVER_API ?? "" },
   allowedDevOrigins: ["192.168.*.*", "10.*.*.*", "172.*.*.*", "*.local"],
+  // Product and hero photos are stored on Cloudinary (the API only accepts its URLs).
+  images: { remotePatterns: [{ protocol: "https", hostname: "res.cloudinary.com" }] },
   cacheComponents: true,
   partialPrefetching: true,
   turbopack: {

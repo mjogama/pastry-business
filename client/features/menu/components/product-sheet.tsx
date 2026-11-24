@@ -104,12 +104,14 @@ const SheetBody = ({
         )}
       </div>
       <p className="text-cell leading-description whitespace-pre-line text-foreground-2">{product.description}</p>
-      <a href={telHref(contactNumber)} className={cn(buttonVariants({ variant: "default", size: "call" }))}>
-        <PhoneIcon strokeWidth={2.2} />
-        <span>
-          Call <span className="tabular">{formatLocalPhone(contactNumber)}</span>
-        </span>
-      </a>
+      {contactNumber && (
+        <a href={telHref(contactNumber)} className={cn(buttonVariants({ variant: "default", size: "call" }))}>
+          <PhoneIcon strokeWidth={2.2} />
+          <span>
+            Call <span className="tabular">{formatLocalPhone(contactNumber)}</span>
+          </span>
+        </a>
+      )}
     </div>
   </>
 );

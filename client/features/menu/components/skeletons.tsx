@@ -1,6 +1,8 @@
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 
+import { CONTAINER } from "../lib/layout";
+
 /**
  * Loading states drawn with the same boxes, paddings and line heights as the real content, so
  * nothing moves when it streams in (§8). Text lines use `1lh` at the real font size.
@@ -62,6 +64,37 @@ export const PicksSkeleton = () => (
       {[0, 1, 2, 3].map((key) => (
         <PickCardSkeleton key={key} />
       ))}
+    </div>
+  </div>
+);
+
+/** Top bar while the business name loads: the same box as `SiteTopBar`, with the name's line as a block. */
+export const TopBarSkeleton = ({ page }: { page: "landing" | "menu" }) => (
+  <div
+    className={cn(
+      CONTAINER,
+      "flex items-center justify-between gap-4 pt-[calc(var(--spacing-page-top)+env(safe-area-inset-top))]",
+      page === "landing" ? "pb-5" : "pb-0",
+    )}
+  >
+    <div className="flex min-h-touch items-center">
+      <Skeleton className="h-6 w-44" />
+    </div>
+    <Skeleton className="h-touch w-24 rounded-pill" />
+  </div>
+);
+
+/** Footer while the business name and phone load: the same frame as `SiteFooter`. */
+export const FooterSkeleton = () => (
+  <div className="border-t border-border bg-footer">
+    <div
+      className={cn(
+        CONTAINER,
+        "flex flex-wrap items-center justify-between gap-5 pt-8 pb-[calc(var(--spacing-page-bottom)+env(safe-area-inset-bottom))]",
+      )}
+    >
+      <Skeleton className="h-12 w-56" />
+      <Skeleton className="h-footer-call w-48 rounded-pill" />
     </div>
   </div>
 );
