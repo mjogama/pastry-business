@@ -42,8 +42,13 @@ export class ProductsService {
     const price = input.price ?? current.price;
     const discountPrice =
       input.discountPrice === undefined ? current.discountPrice : (input.discountPrice ?? undefined);
-    const discountEndsAt =
-      input.discountEndsAt === undefined ? current.discountEndsAt : (input.discountEndsAt ?? undefined);
+    // No discount price means no end date: the two are tied, so removing the price drops the date too.
+    const clearsDiscount = input.discountPrice === null && input.discountEndsAt === undefined;
+    const discountEndsAt = clearsDiscount
+      ? undefined
+      : input.discountEndsAt === undefined
+        ? current.discountEndsAt
+        : (input.discountEndsAt ?? undefined);
     if (discountPrice !== undefined && discountPrice >= price) {
       throw new BadRequestError("Discount must be lower than the price");
     }
@@ -51,7 +56,7 @@ export class ProductsService {
     // Only a new or changed end date has to be today or later; an old sale can keep its past date.
     if (discountEndsAt !== current.discountEndsAt) this.assertEndsAtNotPast(discountEndsAt);
 
-    return this.repository.update(id, input);
+    return this.repository.update(id, clearsDiscount ? { ...input, discountEndsAt: null } : input);
   }
 
   async delete(id: string): Promise<void> {

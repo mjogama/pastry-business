@@ -1,5 +1,7 @@
 import Image from "next/image";
 
+import { Badge } from "@/components/ui/badge";
+import { Money } from "@/features/sales-tracker/components/ui/primitives";
 import { cn } from "@/lib/utils";
 
 import type { ProductView } from "../types";
@@ -27,17 +29,19 @@ export const ProductImage = ({
   variant,
   className,
 }: {
-  product: Pick<ProductView, "name" | "imageUrl" | "isAvailable" | "isOnSale">;
+  product: Pick<ProductView, "name" | "imageUrl" | "isAvailable" | "isOnSale" | "savings">;
   variant: Variant;
   className?: string;
 }) => {
   const isSheet = variant === "sheet";
+  const isCard = variant === "card" || variant === "pick";
   return (
-    <span className={cn("relative block w-full", className)}>
+    <span className={cn("relative block w-full", isCard && "p-3 pb-0", className)}>
       <span
         className={cn(
           "relative flex w-full flex-col items-center justify-center gap-2 overflow-hidden bg-img-placeholder text-foreground-faint",
           isSheet ? "aspect-16/10 rounded-sheet-image" : "aspect-4/3",
+          isCard && "rounded-sheet-image",
           !product.isAvailable && "grayscale",
         )}
       >
@@ -50,7 +54,12 @@ export const ProductImage = ({
           </>
         )}
       </span>
-      {product.isOnSale && (
+      {product.isOnSale && isCard && (
+        <Badge variant="sale" className="absolute top-6 left-6">
+          Save <Money amount={product.savings} />
+        </Badge>
+      )}
+      {product.isOnSale && !isCard && (
         <SaleBadge size={isSheet ? "lg" : "default"} className={isSheet ? "top-3.5 left-3.5" : undefined} />
       )}
     </span>

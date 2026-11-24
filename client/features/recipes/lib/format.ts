@@ -28,8 +28,46 @@ export const compactTime = (v?: string) => {
 export const TEMPERATURE_UNITS = ["°C", "°F"] as const satisfies readonly TemperatureUnit[];
 export const INGREDIENT_UNITS = ["mg", "g", "tsp", "tbsp", "c", "pc"] as const satisfies readonly IngredientUnit[];
 
-/** Ingredient quantity for display: `500, "g"` → `500 g`, `2, "tsp"` → `2 tsp`. */
-export const formatAmount = (quantity: number, unit: IngredientUnit) => `${formatNumber(quantity)} ${unit}`;
+/** What a unit is called on screen. Stored as `pc`, shown as `pcs`; the rest are shown as they are. */
+export const unitLabel = (unit: IngredientUnit) => (unit === "pc" ? "pcs" : unit);
+
+const FRACTIONS: [number, string][] = [
+  [1 / 8, "⅛"],
+  [1 / 4, "¼"],
+  [1 / 3, "⅓"],
+  [3 / 8, "⅜"],
+  [1 / 2, "½"],
+  [5 / 8, "⅝"],
+  [2 / 3, "⅔"],
+  [3 / 4, "¾"],
+  [7 / 8, "⅞"],
+];
+
+const FRACTION_TEXT: [number, string][] = [
+  [1 / 8, "1/8"],
+  [1 / 4, "1/4"],
+  [1 / 3, "1/3"],
+  [3 / 8, "3/8"],
+  [1 / 2, "1/2"],
+  [5 / 8, "5/8"],
+  [2 / 3, "2/3"],
+  [3 / 4, "3/4"],
+  [7 / 8, "7/8"],
+];
+
+/** `0.5` → `½`, `1.5` → `1½`, `2.25` → `2¼`; anything that isn't a common fraction stays a decimal. */
+export const formatQuantityAmount = (n: number) => {
+  const whole = Math.floor(n + 0.005);
+  const fraction = n - whole;
+  if (fraction < 0.01 || fraction > 0.99) return formatNumber(Math.round(n));
+  const match = FRACTIONS.find(([value]) => Math.abs(value - fraction) < 0.01);
+  if (!match) return formatNumber(n);
+  return `${whole > 0 ? whole : ""}${match[1]}`;
+};
+
+/** Ingredient quantity for display: `500, "g"` → `500 g`, `0.5, "pc"` → `½ pcs`. */
+export const formatAmount = (quantity: number, unit: IngredientUnit) =>
+  `${formatQuantityAmount(quantity)} ${unitLabel(unit)}`;
 
 /** Keeps only digits, so whole-number fields accept integers only. */
 export const toIntegerInput = (raw: string) => raw.replace(/\D/g, "");
@@ -39,6 +77,39 @@ export const toNumberInput = (raw: string) => {
   const digits = raw.replace(/[^\d.]/g, "");
   const dot = digits.indexOf(".");
   return dot < 0 ? digits : digits.slice(0, dot + 1) + digits.slice(dot + 1).replace(/\./g, "");
+};
+
+/** Keeps what an ingredient amount can be typed with: digits, `.`, `/` and spaces (`1/2`, `1 1/2`, `0.5`). */
+export const toAmountInput = (raw: string) =>
+  raw
+    .replace(/[^\d./ ]/g, "")
+    .replace(/\s+/g, " ")
+    .replace(/^\s/, "");
+
+/**
+ * Typed amount → the number the server stores: `1/2` → 0.5, `1 1/2` → 1.5, `0.25` → 0.25.
+ * Empty or invalid (`1/0`, `1/2/3`) → `undefined`. Fractions are rounded to 4 decimals (`1/3` → 0.3333).
+ */
+export const parseAmount = (raw: string): number | undefined => {
+  const text = raw.trim();
+  if (!text) return undefined;
+  const round = (n: number) => Math.round(n * 10000) / 10000;
+  const decimal = /^\d*\.?\d+$|^\d+\.$/.exec(text);
+  if (decimal) return Number(text);
+  const match = /^(?:(\d+)\s+)?(\d+)\/(\d+)$/.exec(text);
+  if (!match) return undefined;
+  const [, whole, numerator, denominator] = match;
+  if (Number(denominator) === 0) return undefined;
+  return round(Number(whole ?? 0) + Number(numerator) / Number(denominator));
+};
+
+/** A stored amount for the editor's text box: `0.5` → `1/2`, `1.5` → `1 1/2`, `0.1` → `0.1`. */
+export const amountInput = (n: number) => {
+  const whole = Math.floor(n + 0.005);
+  const fraction = n - whole;
+  const match = FRACTION_TEXT.find(([value]) => Math.abs(value - fraction) < 0.0001);
+  if (!match || fraction < 0.0001) return n.toString();
+  return `${whole > 0 ? `${whole} ` : ""}${match[1]}`;
 };
 
 /** Heights (px) of the card's non-row lines in the ingredient list; see book-card.tsx. */

@@ -31,7 +31,7 @@ export const productSchema = z
     isArchived: z.boolean(),
   })
   .refine((product) => product.discountPrice == null || product.discountPrice < product.price, {
-    message: "Discount must be lower than the price",
+    message: "Discount must be less than the price",
     path: ["discountPrice"],
   }) satisfies z.ZodType<Product>;
 

@@ -8,8 +8,8 @@ import { PriceBlock } from "./price-block";
 import { ProductCardButton } from "./product-card-button";
 import { ProductImage } from "./product-image";
 
-/** Card body: padding 16 / 16 / 18, gap 8 (§7.3). */
-const BODY = "flex w-full min-w-0 flex-col gap-2 px-4 pt-4 pb-4.5";
+/** Card body (menu and picks): sits inside the photo's 12px inset, so the text is indented a little further. */
+const MENU_BODY = "flex w-full min-w-0 flex-col gap-2 px-5 pt-4 pb-5";
 
 /**
  * Menu product card (§7.3): image, one-line title, 2-line description with a fixed min-height so
@@ -25,13 +25,13 @@ export const ProductCard = ({ product }: { product: ProductView }) => (
 export const ProductCardContent = ({ product }: { product: ProductView }) => (
   <>
     <ProductImage product={product} variant="card" />
-    <span className={BODY}>
-      <span className="truncate text-card-title font-semibold text-foreground">{product.name}</span>
+    <span className={MENU_BODY}>
+      <span className="truncate text-xl font-bold text-foreground">{product.name}</span>
       <span className="line-clamp-2 min-h-10 text-body leading-card text-muted-foreground">
         {product.shortDescription}
       </span>
-      <PriceBlock product={product} className="pt-0.5" />
-      <AvailabilityTag isAvailable={product.isAvailable} />
+      <PriceBlock product={product} variant="menu" className="pt-1" />
+      {!product.isAvailable && <AvailabilityTag isAvailable={false} />}
     </span>
   </>
 );
@@ -59,9 +59,9 @@ export const PickCard = ({ product }: { product: ProductView }) => {
 export const PickCardContent = ({ product }: { product: ProductView }) => (
   <>
     <ProductImage product={product} variant="pick" />
-    <span className={BODY}>
-      <span className="truncate text-card-title font-semibold">{product.name}</span>
-      <PriceBlock product={product} variant="pick" />
+    <span className={MENU_BODY}>
+      <span className="truncate text-xl font-bold">{product.name}</span>
+      <PriceBlock product={product} variant="menu" className="pt-1" />
     </span>
   </>
 );

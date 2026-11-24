@@ -16,6 +16,7 @@ export const manilaToday = (instant: Date = new Date()): DateKey => manilaDate.f
 type Priced = Pick<Product, "price" | "discountPrice" | "discountEndsAt">;
 
 /**
+ * `discountPrice` is the amount taken off the price (₱40 with ₱15 off sells for ₱25).
  * §3: on sale while the discount is valid and today ≤ `discountEndsAt` (Manila). It drops off on
  * its own the day after the end date (§4), so nothing has to clean it up.
  */
@@ -26,7 +27,9 @@ export const isOnSale = (product: Priced, today: DateKey): boolean =>
   (product.discountEndsAt == null || today <= product.discountEndsAt);
 
 export const finalPrice = (product: Priced, today: DateKey): number =>
-  isOnSale(product, today) ? (product.discountPrice as number) : product.price;
+  isOnSale(product, today)
+    ? Math.round((product.price - (product.discountPrice as number)) * 100) / 100
+    : product.price;
 
 /** `price − finalPrice`, without float drift. */
 export const savings = (product: Priced, today: DateKey): number =>

@@ -149,9 +149,9 @@ export function ProductFormDialog({
     if (discountPrice.trim() !== "") {
       if (!(discountNumber && discountNumber > 0)) next.discountPrice = "Discount must be more than 0.";
       else if (priceNumber !== undefined && discountNumber >= priceNumber)
-        next.discountPrice = "Discount must be lower than the price.";
+        next.discountPrice = "Discount must be less than the price.";
     }
-    if (discountEndsAt && discountPrice.trim() === "") next.discountEndsAt = "Add a discount price first.";
+    if (discountEndsAt && discountPrice.trim() === "") next.discountEndsAt = "Add a discount amount first.";
     else if (discountEndsAt && discountEndsAt !== product?.discountEndsAt && discountEndsAt < today) {
       next.discountEndsAt = "The end date must be today or later.";
     }
@@ -214,7 +214,7 @@ export function ProductFormDialog({
 
   return (
     <Dialog open onOpenChange={(open) => !open && !saving && onClose()}>
-      <DialogContent className="max-h-[calc(100dvh-32px)] gap-5 overflow-y-auto overscroll-contain rounded-sheet border border-input bg-surface-2 p-5 text-base text-foreground ring-0 sm:max-w-4xl sm:p-6">
+      <DialogContent className="max-h-[calc(100dvh-32px)] gap-5 overflow-x-hidden overflow-y-auto overscroll-contain rounded-sheet border border-input bg-surface-2 p-5 text-base text-foreground ring-0 sm:max-w-4xl sm:p-6">
         <DialogHeader>
           <DialogTitle className="font-display text-section font-bold">
             {product ? "Edit product" : "Add product"}
@@ -295,12 +295,16 @@ export function ProductFormDialog({
                 {errors.price && <p className="text-label-sm text-destructive">{errors.price}</p>}
               </div>
               <div className={FIELD}>
-                <Label htmlFor="p-discount">Discount price (₱)</Label>
+                <Label htmlFor="p-discount">Discount amount off (₱)</Label>
                 <Input
                   id="p-discount"
                   inputMode="decimal"
                   value={discountPrice}
-                  onChange={(e) => setDiscountPrice(e.target.value)}
+                  onChange={(e) => {
+                    setDiscountPrice(e.target.value);
+                    // The end date belongs to the discount: no price, no date.
+                    if (e.target.value.trim() === "") setDiscountEndsAt("");
+                  }}
                   aria-invalid={!!errors.discountPrice}
                 />
                 {errors.discountPrice && <p className="text-label-sm text-destructive">{errors.discountPrice}</p>}
@@ -311,6 +315,7 @@ export function ProductFormDialog({
                   id="p-ends"
                   type="date"
                   value={discountEndsAt}
+                  disabled={discountPrice.trim() === ""}
                   onChange={(e) => setDiscountEndsAt(e.target.value)}
                   aria-invalid={!!errors.discountEndsAt}
                 />
