@@ -4,7 +4,8 @@ import "./globals.css";
 import { THEME_SCRIPT } from "@/lib/theme";
 import { cn } from "@/lib/utils";
 
-const inter = Inter({ subsets: ["latin"], variable: "--font-sans" });
+/** Fallback for `font-sans` where SF Pro Rounded is unavailable (non-Apple devices). */
+const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
 
 /** Display serif for the Sales Tracker (`font-display`). On <html> so portalled overlays inherit it. */
 const fraunces = Fraunces({ subsets: ["latin"], variable: "--font-fraunces", weight: "variable", axes: ["opsz"] });
@@ -27,19 +28,7 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     // The theme script sets data-theme on <html> before React hydrates.
-    <html
-      lang="en"
-      suppressHydrationWarning
-      className={cn(
-        "h-full",
-        "antialiased",
-        geistSans.variable,
-        geistMono.variable,
-        "font-sans",
-        inter.variable,
-        fraunces.variable,
-      )}
-    >
+    <html lang="en" suppressHydrationWarning className={cn("h-full", "antialiased", geistSans.variable, geistMono.variable, "font-sans", inter.variable, fraunces.variable)}>
       <head>
         {/* biome-ignore lint/security/noDangerouslySetInnerHtml: a constant script, no user input */}
         <script dangerouslySetInnerHTML={{ __html: THEME_SCRIPT }} />
