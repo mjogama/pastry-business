@@ -4,7 +4,7 @@ Guidance for AI agents working in this repository.
 
 ## Project Overview
 
-Pato's Pâtisserie: a bakery's website and owner tools. Next.js 16 + Tailwind 4 in `client/` (pnpm), Express 5 API in `server/` (npm), shared TypeScript contracts in `shared/`, Postgres on Neon through Prisma. Pages: public **Landing** `/` and **Menu** `/menu`; owner **Sales Tracker** `/sales-tracker` and **Recipe Book** `/recipes`. One theme with light (default) and dark modes. Original design specs are in `docs/*_V1.md`; new features get a spec in `docs/specs/`.
+Pato's Pâtisserie: a bakery's website and owner tools. Next.js 16 + Tailwind 4 in `client/` (pnpm), Express 5 API in `server/` (npm), shared TypeScript contracts in `shared/`, Postgres on Neon through Prisma. Pages: public **Landing** `/` and **Menu** `/menu`; owner **Sales Tracker** `/sales-tracker`, **Progress** `/progress` and **Recipe Book** `/recipes`. One theme with light (default) and dark modes. Original design specs are in `docs/*_V1.md`; new features get a spec in `docs/specs/`.
 
 ## Commands
 
@@ -34,6 +34,7 @@ Loaded when you open files in that folder (each folder's `CLAUDE.md` imports its
 | Recipe Book `/recipes` | `client/features/recipes/` | `docs/architecture/recipes.md` |
 | Menu `/menu` and Landing `/` | `client/features/menu/` | `docs/architecture/menu.md` |
 | Sales Tracker `/sales-tracker` | `client/features/sales-tracker/` | `docs/architecture/sales-tracker.md` |
+| Progress `/progress` | `client/features/progress/` | `docs/architecture/progress.md` |
 | CMS `/cms` | `client/features/admin/` | `docs/architecture/admin.md` |
 | Owner login `/sc/auth/login` | `client/features/auth/` | `docs/architecture/auth.md` |
 | Server, layout, request path, deployment | `server/` | `docs/architecture/system.md` |

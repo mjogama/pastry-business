@@ -65,6 +65,8 @@ export const cn = createCn({
         "surface-ghost",
         "surface-field",
         "honey",
+        "chart-1",
+        "chart-2",
       ],
       font: ["display"],
       leading: ["prototype", "card", "tagline", "description", "tight"],

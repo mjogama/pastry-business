@@ -4,6 +4,7 @@ import {
   ArrowUpRightIcon,
   BookOpenIcon,
   ChartNoAxesColumnIcon,
+  ChartSplineIcon,
   ExternalLinkIcon,
   HouseIcon,
   MenuIcon,
@@ -25,6 +26,7 @@ const PAGES = [
   { href: "/cms/menu", live: "/menu", label: "Menu", Icon: UtensilsCrossedIcon },
   { href: "/cms/recipes", live: "/recipes", label: "Recipes", Icon: BookOpenIcon },
   { href: "/cms/sales-tracker", live: "/sales-tracker", label: "Sales Tracker", Icon: ChartNoAxesColumnIcon },
+  { href: "/cms/progress", live: "/progress", label: "Progress", Icon: ChartSplineIcon },
 ] as const;
 
 /** Labels stay in place and fade, so the rail never reflows while it resizes. */
@@ -83,7 +85,7 @@ const NavLink = ({
   </div>
 );
 
-/** Brand, the four pages and a link back to the public site. `collapsed` shrinks it to an icon rail. */
+/** Brand, the CMS pages and a link back to the public site. `collapsed` shrinks it to an icon rail. */
 const SidebarContent = ({
   collapsed,
   onNavigate,

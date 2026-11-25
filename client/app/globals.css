@@ -404,6 +404,10 @@
   --honey: var(--primary);
   --card-dim: 1;
 
+  /* Progress charts: this period, previous period (validated for color-vision separation, ≥ 3:1 on the card) */
+  --chart-1: #c99317;
+  --chart-2: #5a9be0;
+
   --elev-popover: 0 24px 60px rgb(0 0 0 / 0.55);
   --elev-card-active: 0 26px 60px rgb(0 0 0 / 0.55);
   --elev-card-side: 0 12px 30px rgb(0 0 0 / 0.35);
@@ -470,6 +474,9 @@
   --card-border-active: #d9c3a0;
   /* Side cards fade by opacity; darkening white cards would turn them grey. */
   --card-dim: 0.15;
+
+  --chart-1: #b87800;
+  --chart-2: #2f74b5;
 
   --elev-popover: 0 20px 50px rgb(59 36 22 / 0.16);
   --elev-card-active: none;

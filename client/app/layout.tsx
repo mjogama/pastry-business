@@ -28,7 +28,19 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     // The theme script sets data-theme on <html> before React hydrates.
-    <html lang="en" suppressHydrationWarning className={cn("h-full", "antialiased", geistSans.variable, geistMono.variable, "font-sans", inter.variable, fraunces.variable)}>
+    <html
+      lang="en"
+      suppressHydrationWarning
+      className={cn(
+        "h-full",
+        "antialiased",
+        geistSans.variable,
+        geistMono.variable,
+        "font-sans",
+        inter.variable,
+        fraunces.variable,
+      )}
+    >
       <head>
         {/* biome-ignore lint/security/noDangerouslySetInnerHtml: a constant script, no user input */}
         <script dangerouslySetInnerHTML={{ __html: THEME_SCRIPT }} />
