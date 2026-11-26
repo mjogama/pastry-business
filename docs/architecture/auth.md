@@ -6,7 +6,7 @@ Login only: a username and password, no signup, reset or logout. Sessions never 
 
 1. `/sc/auth/login` posts to `POST /api/v1/auth/login`. The server checks the bcrypt hash and sets two httpOnly cookies: `access_token` (path `/`) and `refresh_token` (path `/api/v1/auth`). Both are JWTs with no `exp` unless `JWT_ACCESS_TTL_SECONDS` / `JWT_REFRESH_TTL_SECONDS` is set.
 2. `requireAuth` guards the write routes (POST/PUT/DELETE) of `/recipes` and `/sales-entries`. Reads stay public.
-3. `RequireAuth` wraps the `/recipes` and `/sales-tracker` layouts. It calls `GET /auth/me`, and sends anyone without a session to `/sc/auth/login?next=<path>`.
+3. `RequireAuth` wraps the `/recipes`, `/sales-tracker`, `/progress` and `/cms` layouts. It calls `GET /auth/me`, and sends anyone without a session to `/sc/auth/login?next=<path>`.
 4. On a 401, `lib/api/auth-client.ts` calls `POST /auth/refresh` once (one request at a time) and retries. The fetch `api` client in `client.ts` does the same in the browser. If refresh fails, the owner goes to the login page.
 
 Accounts are rows in the `users` table, inserted directly in the database. `passwordHash` is a bcrypt hash (`bcryptjs`; `bcrypt.hashSync("password", 10)`).
