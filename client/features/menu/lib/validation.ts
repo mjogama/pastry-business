@@ -54,4 +54,8 @@ export const businessSettingsSchema = z.object({
   contactNumber: z.string().regex(/^\+\d{8,15}$/, "Use the international format, e.g. +639170000000"),
   heroImageUrl: z.string().optional(),
   preOrdersOpen: z.boolean(),
+  preOrderDays: z.array(z.number().int().min(1).max(5)).min(1),
+  preOrderCutoffDays: z.number().int().min(1).max(6),
+  preOrderCutoffTime: z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/),
+  preOrderHandoffTime: z.string().max(80),
 }) satisfies z.ZodType<BusinessSettings>;

@@ -98,6 +98,7 @@
   --color-surface-icon-tile: var(--surface-icon-tile);
   --color-foreground-ingredient: var(--text-ingredient);
   --color-scrim-modal: var(--scrim-modal);
+  --color-scrim-confirm: var(--scrim-confirm);
   --color-line-active: var(--card-border-active);
   --color-surface-ghost: var(--surface-ghost);
   --color-honey: var(--honey);
@@ -210,6 +211,26 @@
   --shadow-modal: var(--elev-modal);
 
   --animate-hold: hold-fill 1s linear forwards; /* the cell sets the real duration from HOLD_MS */
+  /* Pre-order sent: a stroke drawn in (needs pathLength=1, dasharray 1, dashoffset 1), and a springy pop. */
+  --animate-draw: draw-stroke 0.45s ease-out forwards;
+  --animate-pop: pop 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+
+  @keyframes draw-stroke {
+    to {
+      stroke-dashoffset: 0;
+    }
+  }
+
+  @keyframes pop {
+    0% {
+      transform: scale(0.6);
+      opacity: 0;
+    }
+    100% {
+      transform: scale(1);
+      opacity: 1;
+    }
+  }
 
   @keyframes hold-fill {
     from {
@@ -399,6 +420,8 @@
   --surface-icon-tile: #352a1c;
   --text-ingredient: #efe1c5;
   --scrim-modal: rgb(10 6 4 / 0.7);
+  /* Pre-order hand-over confirmation: black, so the details stand out. */
+  --scrim-confirm: rgb(0 0 0 / 0.6);
   --card-border-active: #5d4a32;
   --surface-ghost: #2a2219;
   --honey: var(--primary);
@@ -471,6 +494,7 @@
   --surface-ghost: #fffdf8;
   --text-ingredient: #3b2416;
   --scrim-modal: rgb(59 36 22 / 0.45);
+  --scrim-confirm: rgb(0 0 0 / 0.5);
   --card-border-active: #d9c3a0;
   /* Side cards fade by opacity; darkening white cards would turn them grey. */
   --card-dim: 0.15;

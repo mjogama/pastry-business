@@ -4,6 +4,8 @@ import { createContext, type ReactNode, useCallback, useContext, useEffect, useM
 
 import type { PriceView, ProductView, SizeView } from "@/features/menu/types";
 
+import type { PreOrderSchedule } from "../lib/days";
+
 import { BagBar } from "./bag-bar";
 import { CheckoutSheet } from "./checkout-sheet";
 
@@ -54,6 +56,8 @@ interface BagContextValue {
   setQuantity: (key: LineKey, quantity: number) => void;
   clear: () => void;
   openCheckout: () => void;
+  /** Which days orders are handed over, the cut-off and the time. */
+  schedule: PreOrderSchedule;
 }
 
 const BagContext = createContext<BagContextValue | null>(null);
@@ -67,7 +71,15 @@ const clamp = (quantity: number) => Math.max(0, Math.min(MAX_QUANTITY, Math.floo
  * The pre-order bag on /menu: which products (and sizes) and how many, the sticky bag bar and the
  * checkout sheet. Only available ones can go in; anything no longer on the menu drops out on load.
  */
-export const BagProvider = ({ products, children }: { products: ProductView[]; children: ReactNode }) => {
+export const BagProvider = ({
+  products,
+  schedule,
+  children,
+}: {
+  products: ProductView[];
+  schedule: PreOrderSchedule;
+  children: ReactNode;
+}) => {
   const byId = useMemo(() => new Map(products.map((product) => [product.id, product])), [products]);
   const [quantities, setQuantities] = useState<Record<string, number>>({});
   const [loaded, setLoaded] = useState(false);
@@ -135,8 +147,9 @@ export const BagProvider = ({ products, children }: { products: ProductView[]; c
       setQuantity,
       clear: () => setQuantities({}),
       openCheckout: () => setCheckoutOpen(true),
+      schedule,
     }),
-    [lines, quantities, add, setQuantity],
+    [lines, quantities, add, setQuantity, schedule],
   );
 
   return (

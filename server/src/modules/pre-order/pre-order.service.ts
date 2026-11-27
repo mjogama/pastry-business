@@ -3,6 +3,7 @@ import { randomInt } from "node:crypto";
 import type { Product } from "@common/modules/product";
 import { DEFAULT_SETTINGS } from "../menu/menu.service";
 import type { PreOrderMailer } from "./pre-order.mailer";
+import type { BusinessSettings } from "@common/modules/menu";
 import type { MenuRepository } from "../menu/menu.repository";
 import type { PreOrderRepository } from "./pre-order.repository";
 import type { ProductsRepository } from "../products/products.repository";
@@ -31,9 +32,15 @@ const manilaNow = (now: Date) => new Date(now.getTime() + MANILA_OFFSET_MS).toIS
 export const addDays = (day: DayKey, days: number): DayKey =>
   new Date(new Date(`${day}T00:00:00Z`).getTime() + days * DAY_MS).toISOString().slice(0, 10);
 
-export const isWeekday = (day: DayKey) => {
-  const weekday = new Date(`${day}T00:00:00Z`).getUTCDay();
-  return weekday !== 0 && weekday !== 6;
+/** 0 (Sunday) to 6 (Saturday). */
+export const weekdayOf = (day: DayKey) => new Date(`${day}T00:00:00Z`).getUTCDay();
+
+const WEEKDAY_NAMES = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+
+/** `Thursdays`, `Tuesdays and Thursdays`. */
+const daysText = (days: number[]) => {
+  const names = days.map((d) => `${WEEKDAY_NAMES[d]}s`);
+  return names.length > 1 ? `${names.slice(0, -1).join(", ")} and ${names.at(-1)}` : (names[0] ?? "");
 };
 
 /** The product's price per piece on `day`: the sale applies while `day` ≤ `discountEndsAt` (as on the menu). */
@@ -69,7 +76,7 @@ export class PreOrderService {
     if (website) throw new BadRequestError("Your pre-order couldn’t be sent.");
     const settings = (await this.settings.findSettings()) ?? DEFAULT_SETTINGS;
     if (!settings.preOrdersOpen) throw new ConflictError("We’re not taking pre-orders right now.");
-    this.assertPickupDate(input.pickupDate);
+    this.assertPickupDate(input.pickupDate, settings);
 
     const order = await this.repository.create({
       ...input,
@@ -77,7 +84,7 @@ export class PreOrderService {
       code: await this.uniqueCode(),
       items: await this.priceItems(items, input.pickupDate),
     });
-    void this.mailer.send("placed", order, settings.businessName);
+    void this.mailer.send("placed", order, settings);
     return order;
   }
 
@@ -95,14 +102,14 @@ export class PreOrderService {
         ? await this.repository.complete(id, {
             date: manilaNow(this.clock()).slice(0, 16),
             title: `Pre-order ${current.code}`,
-            note: `${current.customerName} · ${current.handoff}`,
+            note: [current.customerName, current.handoff].filter(Boolean).join(" · "),
           })
         : await this.repository.setStatus(id, current.status, status, reason || undefined);
     if (!updated) throw new ConflictError("This pre-order was just changed. Reload and try again.");
 
     if (status !== "completed") {
       const settings = (await this.settings.findSettings()) ?? DEFAULT_SETTINGS;
-      void this.mailer.send(status, updated, settings.businessName);
+      void this.mailer.send(status, updated, settings);
     }
     return updated;
   }
@@ -113,14 +120,18 @@ export class PreOrderService {
     await this.repository.delete(id);
   }
 
-  /** A weekday from tomorrow (Manila) up to `MAX_DAYS_AHEAD` days ahead. */
-  private assertPickupDate(day: DayKey) {
-    const today = manilaNow(this.clock()).slice(0, 10);
-    if (day <= today) throw new BadRequestError("Pick a day from tomorrow onward.");
-    if (day > addDays(today, MAX_DAYS_AHEAD)) {
+  /** One of the owner's selling weekdays, before its cut-off (day and time, Manila), up to `MAX_DAYS_AHEAD` days ahead. */
+  private assertPickupDate(day: DayKey, { preOrderDays, preOrderCutoffDays, preOrderCutoffTime }: BusinessSettings) {
+    if (!preOrderDays.includes(weekdayOf(day))) {
+      throw new BadRequestError(`We only hand over pre-orders on ${daysText(preOrderDays)}.`);
+    }
+    const now = manilaNow(this.clock()).slice(0, 16);
+    if (now >= `${addDays(day, -preOrderCutoffDays)}T${preOrderCutoffTime}`) {
+      throw new BadRequestError("Orders for that day are closed. Please pick the next one.");
+    }
+    if (day > addDays(now.slice(0, 10), MAX_DAYS_AHEAD)) {
       throw new BadRequestError(`Pick a day within the next ${MAX_DAYS_AHEAD} days.`);
     }
-    if (!isWeekday(day)) throw new BadRequestError("Pick a school day (Monday to Friday).");
   }
 
   /** Merges repeated products (and sizes) and copies each one's name and price on the hand-over day. */

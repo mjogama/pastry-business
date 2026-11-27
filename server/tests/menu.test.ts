@@ -104,14 +104,21 @@ describe("menu, products and categories routes", () => {
 
 describe("MenuService", () => {
   const settings = { businessName: "Pato", tagline: "Hi", contactNumber: "+639170000000" };
-  const saved = { ...settings, preOrdersOpen: true };
+  const preOrders = {
+    preOrdersOpen: true,
+    preOrderDays: [4],
+    preOrderCutoffDays: 1,
+    preOrderCutoffTime: "23:59",
+    preOrderHandoffTime: "",
+  };
+  const saved = { ...settings, ...preOrders };
 
   it("falls back to default settings and builds the menu from its parts", async () => {
     const service = new MenuService(
       {
         findSettings: async () => null,
-        saveSettings: async (s) => ({ ...s, preOrdersOpen: true }),
-        savePreOrdersOpen: async (open, defaults) => ({ ...defaults, preOrdersOpen: open }),
+        saveSettings: async (s) => ({ ...s, ...preOrders }),
+        savePreOrderSettings: async (patch, defaults) => ({ ...defaults, ...preOrders, ...patch }),
       },
       { findAll: async () => [{ id: "c", name: "Breads", sortOrder: 0 }] } as never,
       { findAll: async (q?: { includeArchived?: boolean }) => (q?.includeArchived ? ["archived"] : []) } as never,
@@ -123,7 +130,21 @@ describe("MenuService", () => {
       products: [],
     });
     expect(await service.updateSettings(settings)).toEqual(saved);
-    expect(await service.updatePreOrdersOpen(false)).toMatchObject({ preOrdersOpen: false });
+    expect(await service.updatePreOrderSettings({ open: false })).toMatchObject({ preOrdersOpen: false });
+    expect(
+      await service.updatePreOrderSettings({
+        days: [2, 4],
+        cutoffDays: 2,
+        cutoffTime: "18:00",
+        handoffTime: "12–1 PM",
+      }),
+    ).toMatchObject({
+      preOrdersOpen: true,
+      preOrderDays: [2, 4],
+      preOrderCutoffDays: 2,
+      preOrderCutoffTime: "18:00",
+      preOrderHandoffTime: "12–1 PM",
+    });
   });
 });
 

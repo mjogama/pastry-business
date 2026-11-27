@@ -61,6 +61,7 @@ export const cn = createCn({
         "surface-icon-tile",
         "foreground-ingredient",
         "scrim-modal",
+        "scrim-confirm",
         "line-active",
         "surface-ghost",
         "surface-field",

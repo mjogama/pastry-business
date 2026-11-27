@@ -1,3 +1,4 @@
+import type { BusinessSettings } from "@common/modules/menu";
 import type { PreOrder } from "@common/modules/pre-order";
 
 import type { DateKey, PriceView } from "@/features/menu/types";
@@ -12,11 +13,52 @@ export const addDays = (day: DateKey, days: number): DateKey =>
 
 const weekday = (day: DateKey) => new Date(`${day}T00:00:00Z`).getUTCDay();
 
-/** Hand-over days a customer can pick: weekdays from tomorrow up to `MAX_DAYS_AHEAD` days ahead (the server checks too). */
-export const pickupDays = (today: DateKey): DateKey[] =>
-  Array.from({ length: MAX_DAYS_AHEAD }, (_, i) => addDays(today, i + 1)).filter(
-    (day) => weekday(day) !== 0 && weekday(day) !== 6,
+/** The owner's hand-over schedule, set on `/cms/pre-orders`. */
+export type PreOrderSchedule = Pick<
+  BusinessSettings,
+  "preOrderDays" | "preOrderCutoffDays" | "preOrderCutoffTime" | "preOrderHandoffTime"
+>;
+
+export const WEEKDAY_NAMES = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+
+/** `Thursday`, `Tuesday and Thursday`, `Monday, Wednesday and Friday`; `plural` gives `Thursdays`. */
+export const weekdaysText = (days: number[], plural = false) => {
+  const names = days.map((d) => `${WEEKDAY_NAMES[d]}${plural ? "s" : ""}`);
+  return names.length > 1 ? `${names.slice(0, -1).join(", ")} and ${names.at(-1)}` : (names[0] ?? "");
+};
+
+/** `18:00` → `6:00 PM`; `23:59` → `11:59 PM`. */
+export const timeText = (time: string) => {
+  const [h = 0, m = 0] = time.split(":").map(Number);
+  return `${h % 12 || 12}:${String(m).padStart(2, "0")} ${h < 12 ? "AM" : "PM"}`;
+};
+
+/** When orders close: `Wednesday, 6:00 PM` for one selling day, otherwise `6:00 PM, 2 days before`. */
+export const cutoffText = ({ preOrderDays, preOrderCutoffDays, preOrderCutoffTime }: PreOrderSchedule) => {
+  const time = timeText(preOrderCutoffTime);
+  const [only] = preOrderDays;
+  if (preOrderDays.length === 1 && only !== undefined) {
+    return `${WEEKDAY_NAMES[(only - preOrderCutoffDays + 7) % 7]}, ${time}`;
+  }
+  return `${time}, ${preOrderCutoffDays === 1 ? "the day before" : `${preOrderCutoffDays} days before`}`;
+};
+
+/**
+ * Hand-over days a customer can pick at `now` (Manila `YYYY-MM-DDTHH:mm`): the selling weekdays whose
+ * cut-off (`preOrderCutoffDays` before, at `preOrderCutoffTime`) is still ahead, up to `MAX_DAYS_AHEAD`
+ * days ahead. The server checks the same rule.
+ */
+export const pickupDays = (
+  now: string,
+  { preOrderDays, preOrderCutoffDays, preOrderCutoffTime }: PreOrderSchedule,
+): DateKey[] => {
+  const today = now.slice(0, 10);
+  const minute = now.slice(0, 16);
+  return Array.from({ length: MAX_DAYS_AHEAD }, (_, i) => addDays(today, i + 1)).filter(
+    (day) =>
+      preOrderDays.includes(weekday(day)) && `${addDays(day, -preOrderCutoffDays)}T${preOrderCutoffTime}` > minute,
   );
+};
 
 const shortDay = new Intl.DateTimeFormat("en-US", {
   timeZone: "UTC",

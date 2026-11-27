@@ -3,7 +3,7 @@ import type { Request, Response } from "express";
 import type { MenuService } from "./menu.service";
 import { sendSuccess } from "@shared/http/response";
 import type { ValidatedRequest } from "@shared/middlewares/validate";
-import type { updateSettingsSchemas, updatePreOrdersOpenSchemas } from "./menu.schema";
+import type { updateSettingsSchemas, updatePreOrderSettingsSchemas } from "./menu.schema";
 
 export class MenuController {
   constructor(private readonly service: MenuService) {}
@@ -23,8 +23,15 @@ export class MenuController {
     sendSuccess(res, { message: "Settings updated", data: settings });
   };
 
-  updatePreOrdersOpen = async (req: ValidatedRequest<typeof updatePreOrdersOpenSchemas>, res: Response) => {
-    const settings = await this.service.updatePreOrdersOpen(req.body.open);
-    sendSuccess(res, { message: req.body.open ? "Pre-orders opened" : "Pre-orders closed", data: settings });
+  updatePreOrderSettings = async (req: ValidatedRequest<typeof updatePreOrderSettingsSchemas>, res: Response) => {
+    const settings = await this.service.updatePreOrderSettings(req.body);
+    const { open, ...rest } = req.body;
+    const message =
+      open === undefined || Object.keys(rest).length > 0
+        ? "Pre-order settings saved"
+        : open
+          ? "Pre-orders opened"
+          : "Pre-orders closed";
+    sendSuccess(res, { message, data: settings });
   };
 }

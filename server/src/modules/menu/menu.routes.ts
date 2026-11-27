@@ -3,7 +3,7 @@ import { Router } from "express";
 import type { MenuController } from "./menu.controller";
 import { validate } from "@shared/middlewares/validate";
 import { requireAuth } from "@shared/middlewares/requireAuth";
-import { updateSettingsSchemas, updatePreOrdersOpenSchemas } from "./menu.schema";
+import { updateSettingsSchemas, updatePreOrderSettingsSchemas } from "./menu.schema";
 
 export class MenuRouter {
   readonly router: Router = Router();
@@ -15,8 +15,8 @@ export class MenuRouter {
     this.router.put(
       "/settings/pre-orders",
       requireAuth,
-      validate(updatePreOrdersOpenSchemas),
-      controller.updatePreOrdersOpen,
+      validate(updatePreOrderSettingsSchemas),
+      controller.updatePreOrderSettings,
     );
   }
 }
