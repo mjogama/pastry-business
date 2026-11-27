@@ -18,7 +18,6 @@ import { Label } from "@/components/ui/label";
 import { NativeSelect, NativeSelectOption } from "@/components/ui/native-select";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Textarea } from "@/components/ui/textarea";
-import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { refreshPublicMenu } from "@/features/admin/actions";
 import { Switch } from "@/features/admin/components/switch";
 import { CONTAINER } from "@/features/menu/lib/layout";
@@ -155,8 +154,8 @@ export function AdminPreOrders() {
     return [...counts.entries()].sort(([a], [b]) => a.localeCompare(b));
   }, [orders, today]);
 
-  // Start on the next day with orders; "all" when there are none.
-  const selectedDay = day ?? upcoming[0]?.[0] ?? "all";
+  // Start on "All days" so every recent order shows.
+  const selectedDay = day ?? "all";
 
   const dayOrders = useMemo(
     () => (orders ?? []).filter((order) => selectedDay === "all" || order.pickupDate === selectedDay),
@@ -278,25 +277,51 @@ export function AdminPreOrders() {
         <p className="text-body-lg text-muted-foreground">Loading pre-orders…</p>
       ) : (
         <>
-          <div className="flex flex-col gap-2.5">
-            <h2 className="text-label font-semibold tracking-label text-muted-foreground uppercase">Hand-over day</h2>
-            <ToggleGroup
-              aria-label="Hand-over day"
-              variant="chip"
-              size="chip"
-              spacing={2.5}
-              value={[selectedDay]}
-              onValueChange={(next) => next[0] && setDay(next[0])}
-              className="scrollbar-none max-w-full overflow-x-auto rounded-none p-1"
-            >
-              {upcoming.map(([d, count]) => (
-                <ToggleGroupItem key={d} value={d} aria-label={`${dayLabel(d, today)}, ${count} to do`}>
-                  {dayLabel(d, today)}
-                  <span className="tabular ml-1.5 opacity-75">{count}</span>
-                </ToggleGroupItem>
-              ))}
-              <ToggleGroupItem value="all">All days</ToggleGroupItem>
-            </ToggleGroup>
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
+            <div className="flex flex-col gap-2.5 sm:w-72">
+              <span id="filter-day" className="text-label font-semibold tracking-label text-muted-foreground uppercase">
+                Hand-over day
+              </span>
+              <NativeSelect
+                aria-labelledby="filter-day"
+                value={selectedDay}
+                onChange={(e) => setDay(e.target.value)}
+                className="text-body-lg"
+                wrapperClassName="w-full"
+              >
+                <NativeSelectOption value="all">All days</NativeSelectOption>
+                {/* A picked day stays listed after its last order is done. */}
+                {(selectedDay === "all" || upcoming.some(([d]) => d === selectedDay)
+                  ? upcoming
+                  : [...upcoming, [selectedDay, 0] as const]
+                ).map(([d, count]) => (
+                  <NativeSelectOption key={d} value={d}>
+                    {`${dayLabel(d, today)} · ${count} to do`}
+                  </NativeSelectOption>
+                ))}
+              </NativeSelect>
+            </div>
+            <div className="flex flex-col gap-2.5 sm:w-56">
+              <span
+                id="filter-status"
+                className="text-label font-semibold tracking-label text-muted-foreground uppercase"
+              >
+                Status
+              </span>
+              <NativeSelect
+                aria-labelledby="filter-status"
+                value={status}
+                onChange={(e) => setStatus(e.target.value as StatusFilter)}
+                className="text-body-lg"
+                wrapperClassName="w-full"
+              >
+                {STATUS_FILTERS.map((f) => (
+                  <NativeSelectOption key={f.value} value={f.value}>
+                    {f.label}
+                  </NativeSelectOption>
+                ))}
+              </NativeSelect>
+            </div>
           </div>
 
           {selectedDay !== "all" && (
@@ -352,22 +377,6 @@ export function AdminPreOrders() {
           )}
 
           <div className="flex flex-col gap-3.5">
-            <ToggleGroup
-              aria-label="Filter by status"
-              variant="chip"
-              size="chip"
-              spacing={2.5}
-              value={[status]}
-              onValueChange={(next) => next[0] && setStatus(next[0] as StatusFilter)}
-              className="scrollbar-none max-w-full overflow-x-auto rounded-none p-1"
-            >
-              {STATUS_FILTERS.map((f) => (
-                <ToggleGroupItem key={f.value} value={f.value}>
-                  {f.label}
-                </ToggleGroupItem>
-              ))}
-            </ToggleGroup>
-
             {visible.length === 0 ? (
               <p className="py-6 text-body-lg text-muted-foreground">No pre-orders here.</p>
             ) : (
