@@ -5,6 +5,8 @@ import type { ComponentType, ReactNode, RefObject } from "react";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { Drawer, DrawerContent, DrawerSwipeHandle, DrawerTitle } from "@/components/ui/drawer";
+import { AddToBag } from "@/features/pre-orders/components/add-to-bag";
+import { useBag } from "@/features/pre-orders/components/bag-provider";
 import { Money, scrimProps } from "@/features/sales-tracker/components/ui/primitives";
 import { PHONE_QUERY, useMediaQuery } from "@/features/sales-tracker/hooks/use-environment";
 import { cn } from "@/lib/utils";
@@ -69,49 +71,57 @@ const SheetBody = ({
   onClose: () => void;
   /** The overlay's own title part, so the dialog is labelled by the product name. */
   Title: ComponentType<{ className?: string; children: ReactNode }>;
-}) => (
-  <>
-    <div className="relative px-sheet-inset pt-sheet-inset">
-      <ProductImage product={product} variant="sheet" />
-      <Button
-        variant="overlay"
-        size="icon-touch"
-        aria-label="Close"
-        onClick={onClose}
-        className="absolute top-6 right-6"
-      >
-        <CloseIcon />
-      </Button>
-    </div>
-    <div className="flex flex-col gap-3.5 px-6 pt-5 pb-6">
-      <span className="text-label-sm font-bold tracking-eyebrow-sm text-honey uppercase">{product.categoryName}</span>
-      <Title className="font-display text-sheet-title font-bold text-foreground">{product.name}</Title>
-      <AvailabilityTag isAvailable={product.isAvailable} size="sheet" />
-      <div className="flex flex-col gap-1.5 rounded-card border border-dashed border-input bg-surface-note px-4 py-3.5">
-        <span className="flex flex-wrap items-baseline gap-x-2.5 gap-y-1">
-          {product.isOnSale && (
-            <s className="text-card-title whitespace-nowrap text-foreground-faint">
-              <span className="sr-only">Was </span>
-              <Money amount={product.price} />
-            </s>
-          )}
-          <Money amount={product.finalPrice} className="text-sheet-title font-bold whitespace-nowrap text-honey" />
-        </span>
-        {product.isOnSale && (
-          <span className="tabular text-label text-foreground-2">
-            Save <Money amount={product.savings} /> · {saleEndsText(product.discountEndsAt)}
+}) => {
+  // While pre-orders are open, Add to pre-order is the main action and Call steps back to an outline.
+  const preOrdering = useBag() != null && product.isAvailable;
+  return (
+    <>
+      <div className="relative px-sheet-inset pt-sheet-inset">
+        <ProductImage product={product} variant="sheet" />
+        <Button
+          variant="overlay"
+          size="icon-touch"
+          aria-label="Close"
+          onClick={onClose}
+          className="absolute top-6 right-6"
+        >
+          <CloseIcon />
+        </Button>
+      </div>
+      <div className="flex flex-col gap-3.5 px-6 pt-5 pb-6">
+        <span className="text-label-sm font-bold tracking-eyebrow-sm text-honey uppercase">{product.categoryName}</span>
+        <Title className="font-display text-sheet-title font-bold text-foreground">{product.name}</Title>
+        <AvailabilityTag isAvailable={product.isAvailable} size="sheet" />
+        <div className="flex flex-col gap-1.5 rounded-card border border-dashed border-input bg-surface-note px-4 py-3.5">
+          <span className="flex flex-wrap items-baseline gap-x-2.5 gap-y-1">
+            {product.isOnSale && (
+              <s className="text-card-title whitespace-nowrap text-foreground-faint">
+                <span className="sr-only">Was </span>
+                <Money amount={product.price} />
+              </s>
+            )}
+            <Money amount={product.finalPrice} className="text-sheet-title font-bold whitespace-nowrap text-honey" />
           </span>
+          {product.isOnSale && (
+            <span className="tabular text-label text-foreground-2">
+              Save <Money amount={product.savings} /> · {saleEndsText(product.discountEndsAt)}
+            </span>
+          )}
+        </div>
+        <p className="text-cell leading-description whitespace-pre-line text-foreground-2">{product.description}</p>
+        <AddToBag key={product.id} product={product} onAdded={onClose} />
+        {contactNumber && (
+          <a
+            href={telHref(contactNumber)}
+            className={cn(buttonVariants({ variant: preOrdering ? "call-outline" : "default", size: "call" }))}
+          >
+            <PhoneIcon strokeWidth={2.2} />
+            <span>
+              Call <span className="tabular">{formatLocalPhone(contactNumber)}</span>
+            </span>
+          </a>
         )}
       </div>
-      <p className="text-cell leading-description whitespace-pre-line text-foreground-2">{product.description}</p>
-      {contactNumber && (
-        <a href={telHref(contactNumber)} className={cn(buttonVariants({ variant: "default", size: "call" }))}>
-          <PhoneIcon strokeWidth={2.2} />
-          <span>
-            Call <span className="tabular">{formatLocalPhone(contactNumber)}</span>
-          </span>
-        </a>
-      )}
-    </div>
-  </>
-);
+    </>
+  );
+};

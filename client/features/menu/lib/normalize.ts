@@ -11,11 +11,12 @@ const num = (v: unknown) => (typeof v === "number" && Number.isFinite(v) ? v : u
 const list = <T>(v: readonly (T | null | undefined)[] | null | undefined): T[] =>
   Array.isArray(v) ? v.filter((x): x is T => x !== null && x !== undefined) : [];
 
-/** Defaults while the server is unreachable or has no saved settings. No contact number, so no Call button. */
+/** Defaults while the server is unreachable or has no saved settings. No contact number, so no Call button; no pre-orders. */
 export const FALLBACK_SETTINGS: BusinessSettings = {
   businessName: "Pato's Pâtisserie",
   tagline: "",
   contactNumber: "",
+  preOrdersOpen: false,
 };
 
 const imageUrl = (v: unknown) => {
@@ -34,6 +35,7 @@ export const normalizeSettings = (settings: BusinessSettings | null | undefined)
     tagline: text(settings?.tagline),
     contactNumber: text(settings?.contactNumber),
     ...(hero && { heroImageUrl: hero }),
+    preOrdersOpen: settings?.preOrdersOpen === true,
   };
 };
 

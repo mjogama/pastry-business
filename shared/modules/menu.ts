@@ -9,6 +9,8 @@ export interface BusinessSettings {
   /** E.164, e.g. `+639170000000` (`^\+\d{8,15}$`). Shown in the local format. */
   contactNumber: string;
   heroImageUrl?: string;
+  /** Whether /menu takes pre-orders. Changed only through `PUT /menu/settings/pre-orders`. */
+  preOrdersOpen: boolean;
 }
 
 /** `GET /menu`: everything the customer menu renders. Archived products are left out. */
@@ -18,5 +20,5 @@ export interface MenuData {
   products: Product[];
 }
 
-/** `PUT /menu/settings`. */
-export type UpdateBusinessSettingsInput = BusinessSettings;
+/** `PUT /menu/settings`. The pre-order switch has its own route. */
+export type UpdateBusinessSettingsInput = Omit<BusinessSettings, "preOrdersOpen">;

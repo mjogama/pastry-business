@@ -1,6 +1,7 @@
 import { io } from "next/cache";
 import Link from "next/link";
-
+import { BagProvider } from "@/features/pre-orders/components/bag-provider";
+import { PreOrderNotice } from "@/features/pre-orders/components/pre-order-notice";
 import { getMenuData } from "../data/menu-data";
 import { buildSections, itemCount, todaysPicks } from "../lib/menu";
 import { manilaToday } from "../lib/pricing";
@@ -34,13 +35,15 @@ export const MenuContent = async ({ searchParams }: { searchParams: PageProps<"/
   const requested = first(query.c);
   const initialCategory = sections.some((section) => section.category.id === requested) ? (requested as string) : ALL;
 
-  return (
+  const views = sections.flatMap((section) => section.products);
+  const content = (
     <MenuProvider
-      products={sections.flatMap((section) => section.products)}
+      products={views}
       settings={{ contactNumber: settings.contactNumber }}
       initialCategory={initialCategory}
       initialProductId={first(query.p)}
     >
+      <PreOrderNotice />
       <CategoryChips categories={sections.map(({ category }) => ({ id: category.id, name: category.name }))} />
       <div id={SECTIONS_ID} className="flex scroll-mt-24 flex-col gap-7">
         {sections.map(({ category, products: items }) => (
@@ -61,6 +64,7 @@ export const MenuContent = async ({ searchParams }: { searchParams: PageProps<"/
       </div>
     </MenuProvider>
   );
+  return settings.preOrdersOpen ? <BagProvider products={views}>{content}</BagProvider> : content;
 };
 
 /** Landing "Today's picks" (§7.1). Hidden when nothing qualifies (§4). */

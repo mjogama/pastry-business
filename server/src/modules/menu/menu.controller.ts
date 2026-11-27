@@ -2,8 +2,8 @@ import type { Request, Response } from "express";
 
 import type { MenuService } from "./menu.service";
 import { sendSuccess } from "@shared/http/response";
-import type { updateSettingsSchemas } from "./menu.schema";
 import type { ValidatedRequest } from "@shared/middlewares/validate";
+import type { updateSettingsSchemas, updatePreOrdersOpenSchemas } from "./menu.schema";
 
 export class MenuController {
   constructor(private readonly service: MenuService) {}
@@ -21,5 +21,10 @@ export class MenuController {
   updateSettings = async (req: ValidatedRequest<typeof updateSettingsSchemas>, res: Response) => {
     const settings = await this.service.updateSettings(req.body);
     sendSuccess(res, { message: "Settings updated", data: settings });
+  };
+
+  updatePreOrdersOpen = async (req: ValidatedRequest<typeof updatePreOrdersOpenSchemas>, res: Response) => {
+    const settings = await this.service.updatePreOrdersOpen(req.body.open);
+    sendSuccess(res, { message: req.body.open ? "Pre-orders opened" : "Pre-orders closed", data: settings });
   };
 }

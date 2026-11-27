@@ -1,6 +1,6 @@
 # Menu `/menu` and Landing `/`
 
-Public, read-only pages; no cart. **Landing:** hero (name, tagline, image, View Menu), Today's picks, call footer. **Menu:** sticky category chips (`?c=`), category sections, product cards that open a detail sheet (`?p=`; a Dialog from 640px, a Drawer below). Design spec: `docs/MENU_UI_V1.md` (landing §7.1, menu §7.2–7.5, rules §4).
+Public pages. While pre-orders are open, `/menu` has a pre-order bag (`docs/architecture/pre-orders.md`); otherwise read-only. **Landing:** hero (name, tagline, image, View Menu), Today's picks, call footer. **Menu:** sticky category chips (`?c=`), category sections, product cards that open a detail sheet (`?p=`; a Dialog from 640px, a Drawer below). Design spec: `docs/MENU_UI_V1.md` (landing §7.1, menu §7.2–7.5, rules §4).
 
 ## Where to change what
 
@@ -21,6 +21,7 @@ Paths are under `client/features/menu/` unless shown in full.
 | What the API call returns and how it is cleaned | `api.ts`, `lib/normalize.ts` | Server rules in `server/src/modules/{products,categories,menu}` |
 | Image upload | `POST /media/images` (`server/src/modules/media`) | Cloudinary env vars; `images.remotePatterns` in `client/next.config.ts` |
 | Phone display and `tel:` links | `lib/phone.ts` | E.164 in data, local format on screen |
+| Pre-order bag, sheet CTA, landing CTA | `client/features/pre-orders/` | `docs/architecture/pre-orders.md` |
 
 ## Rules that must stay true
 

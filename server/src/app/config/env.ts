@@ -42,6 +42,10 @@ const envSchema = z.object({
   CLOUDINARY_API_KEY: z.string().min(1).optional(),
   CLOUDINARY_API_SECRET: z.string().min(1).optional(),
   CLOUDINARY_FOLDER: z.string().min(1).default("pato"),
+  // Pre-order emails (Resend). Without both, emails are skipped and orders still work.
+  RESEND_API_KEY: z.string().min(1).optional(),
+  /** A sender on a domain verified in Resend, e.g. `Pato's Pâtisserie <orders@example.com>`. */
+  EMAIL_FROM: z.string().min(1).optional(),
   JWT_ACCESS_SECRET: z.string().min(32),
   JWT_REFRESH_SECRET: z.string().min(32),
   // Unset means the token never expires.

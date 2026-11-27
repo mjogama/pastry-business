@@ -94,6 +94,8 @@ model SalesEntry {
   title     String      @db.VarChar(60)
   items     SalesItem[]
   note      String      @default("")
+  /// Set when the entry was made by completing a pre-order.
+  preOrder  PreOrder?
   createdAt DateTime    @default(now()) @db.Timestamptz(3)
   updatedAt DateTime    @updatedAt @db.Timestamptz(3)
 
@@ -140,25 +142,26 @@ model Category {
 
 /// shared/modules/product.ts `Product`. `price` and `discountPrice` are PHP.
 model Product {
-  id               String    @id @default(uuid(7))
-  name             String    @db.VarChar(60)
+  id               String         @id @default(uuid(7))
+  name             String         @db.VarChar(60)
   categoryId       String
   /// A category with products can't be deleted.
-  category         Category  @relation(fields: [categoryId], references: [id], onDelete: Restrict)
-  shortDescription String    @db.VarChar(120)
+  category         Category       @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+  shortDescription String         @db.VarChar(120)
   description      String?
   /// Cloudinary URL.
   imageUrl         String?
-  price            Decimal   @db.Decimal(10, 2)
-  discountPrice    Decimal?  @db.Decimal(10, 2)
+  price            Decimal        @db.Decimal(10, 2)
+  discountPrice    Decimal?       @db.Decimal(10, 2)
   /// Last sale day (Manila), a calendar date.
-  discountEndsAt   DateTime? @db.Date
-  isAvailable      Boolean   @default(true)
-  isFeatured       Boolean   @default(false)
-  sortOrder        Int       @default(0)
-  isArchived       Boolean   @default(false)
-  createdAt        DateTime  @default(now()) @db.Timestamptz(3)
-  updatedAt        DateTime  @updatedAt @db.Timestamptz(3)
+  discountEndsAt   DateTime?      @db.Date
+  isAvailable      Boolean        @default(true)
+  isFeatured       Boolean        @default(false)
+  sortOrder        Int            @default(0)
+  isArchived       Boolean        @default(false)
+  preOrderItems    PreOrderItem[]
+  createdAt        DateTime       @default(now()) @db.Timestamptz(3)
+  updatedAt        DateTime       @updatedAt @db.Timestamptz(3)
 
   @@index([categoryId])
   @@map("products")
@@ -171,7 +174,55 @@ model BusinessSettings {
   tagline       String
   contactNumber String
   heroImageUrl  String?
+  /// Whether /menu takes pre-orders.
+  preOrdersOpen Boolean  @default(true)
   updatedAt     DateTime @updatedAt @db.Timestamptz(3)
 
   @@map("business_settings")
+}
+
+enum PreOrderStatus {
+  pending
+  confirmed
+  completed
+  cancelled
+}
+
+/// shared/modules/pre-order.ts `PreOrder`.
+model PreOrder {
+  id           String         @id @default(uuid(7))
+  code         String         @unique @db.VarChar(8)
+  customerName String         @db.VarChar(60)
+  email        String         @db.VarChar(254)
+  handoff      String         @db.VarChar(80)
+  /// Hand-over day (Manila), a calendar date.
+  pickupDate   DateTime       @db.Date
+  note         String         @default("")
+  status       PreOrderStatus @default(pending)
+  cancelReason String?
+  items        PreOrderItem[]
+  salesEntryId String?        @unique
+  salesEntry   SalesEntry?    @relation(fields: [salesEntryId], references: [id], onDelete: SetNull)
+  createdAt    DateTime       @default(now()) @db.Timestamptz(3)
+  updatedAt    DateTime       @updatedAt @db.Timestamptz(3)
+
+  @@index([pickupDate])
+  @@map("pre_orders")
+}
+
+/// shared/modules/pre-order.ts `PreOrderItem`. Name and price are copied from the product when ordered.
+model PreOrderItem {
+  id          String   @id @default(uuid(7))
+  preOrderId  String
+  preOrder    PreOrder @relation(fields: [preOrderId], references: [id], onDelete: Cascade)
+  position    Int
+  productId   String?
+  product     Product? @relation(fields: [productId], references: [id], onDelete: SetNull)
+  productName String
+  price       Decimal  @db.Decimal(10, 2)
+  quantity    Int
+
+  @@unique([preOrderId, position])
+  @@index([productId])
+  @@map("pre_order_items")
 }

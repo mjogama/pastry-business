@@ -25,6 +25,10 @@ describe("menu, products and categories routes", () => {
     await request(app).patch(`/api/v1/categories/${randomUUID()}`).send({}).expect(401);
     await request(app).delete(`/api/v1/categories/${randomUUID()}`).expect(401);
     await request(app).put("/api/v1/menu/settings").send({}).expect(401);
+    await request(app).put("/api/v1/menu/settings/pre-orders").send({ open: false }).expect(401);
+    await request(app).get("/api/v1/pre-orders").expect(401);
+    await request(app).patch(`/api/v1/pre-orders/${randomUUID()}/status`).send({}).expect(401);
+    await request(app).delete(`/api/v1/pre-orders/${randomUUID()}`).expect(401);
     await request(app).post("/api/v1/media/images").expect(401);
   });
 
@@ -81,10 +85,15 @@ describe("menu, products and categories routes", () => {
 
 describe("MenuService", () => {
   const settings = { businessName: "Pato", tagline: "Hi", contactNumber: "+639170000000" };
+  const saved = { ...settings, preOrdersOpen: true };
 
   it("falls back to default settings and builds the menu from its parts", async () => {
     const service = new MenuService(
-      { findSettings: async () => null, saveSettings: async (s) => s },
+      {
+        findSettings: async () => null,
+        saveSettings: async (s) => ({ ...s, preOrdersOpen: true }),
+        savePreOrdersOpen: async (open, defaults) => ({ ...defaults, preOrdersOpen: open }),
+      },
       { findAll: async () => [{ id: "c", name: "Breads", sortOrder: 0 }] } as never,
       { findAll: async (q?: { includeArchived?: boolean }) => (q?.includeArchived ? ["archived"] : []) } as never,
     );
@@ -94,7 +103,8 @@ describe("MenuService", () => {
       categories: [{ id: "c", name: "Breads", sortOrder: 0 }],
       products: [],
     });
-    expect(await service.updateSettings(settings)).toEqual(settings);
+    expect(await service.updateSettings(settings)).toEqual(saved);
+    expect(await service.updatePreOrdersOpen(false)).toMatchObject({ preOrdersOpen: false });
   });
 });
 
