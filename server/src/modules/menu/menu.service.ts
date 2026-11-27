@@ -8,6 +8,7 @@ export const DEFAULT_SETTINGS: BusinessSettings = {
   businessName: "Pato's Pâtisserie",
   tagline: "",
   contactNumber: "",
+  preOrdersOpen: true,
 };
 
 export class MenuService {
@@ -33,5 +34,10 @@ export class MenuService {
 
   updateSettings(input: UpdateBusinessSettingsInput): Promise<BusinessSettings> {
     return this.repository.saveSettings(input);
+  }
+
+  updatePreOrdersOpen(open: boolean): Promise<BusinessSettings> {
+    const { preOrdersOpen: _, ...defaults } = DEFAULT_SETTINGS;
+    return this.repository.savePreOrdersOpen(open, defaults);
   }
 }

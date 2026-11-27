@@ -13,7 +13,12 @@ export const LandingHero = ({
   tagline,
   heroImageUrl,
   menuHref = "/menu",
-}: Pick<BusinessSettings, "businessName" | "tagline" | "heroImageUrl"> & { menuHref?: string }) => (
+  preOrderHref,
+}: Pick<BusinessSettings, "businessName" | "tagline" | "heroImageUrl"> & {
+  menuHref?: string;
+  /** Shown as a second CTA while pre-orders are open. */
+  preOrderHref?: string;
+}) => (
   <section aria-labelledby="hero-title" className="flex flex-wrap items-center gap-12">
     <div className="flex min-w-0 flex-[1_1_420px] flex-col gap-5.5">
       <span className="text-body font-semibold tracking-eyebrow text-honey uppercase">Freshly baked</span>
@@ -26,6 +31,11 @@ export const LandingHero = ({
           View Menu
           <ArrowIcon />
         </Link>
+        {preOrderHref && (
+          <Link href={preOrderHref} className={cn(buttonVariants({ variant: "call-outline", size: "cta" }))}>
+            Pre-order for school
+          </Link>
+        )}
       </div>
     </div>
     <div className="relative flex aspect-4/3 min-w-0 flex-[1_1_380px] flex-col items-center justify-center gap-3 overflow-hidden rounded-hero border border-border bg-muted text-foreground-faint">

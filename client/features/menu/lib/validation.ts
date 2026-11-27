@@ -43,4 +43,5 @@ export const businessSettingsSchema = z.object({
   tagline: z.string().trim(),
   contactNumber: z.string().regex(/^\+\d{8,15}$/, "Use the international format, e.g. +639170000000"),
   heroImageUrl: z.string().optional(),
+  preOrdersOpen: z.boolean(),
 }) satisfies z.ZodType<BusinessSettings>;

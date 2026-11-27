@@ -1,9 +1,9 @@
 import { Router } from "express";
 
-import { updateSettingsSchemas } from "./menu.schema";
 import type { MenuController } from "./menu.controller";
 import { validate } from "@shared/middlewares/validate";
 import { requireAuth } from "@shared/middlewares/requireAuth";
+import { updateSettingsSchemas, updatePreOrdersOpenSchemas } from "./menu.schema";
 
 export class MenuRouter {
   readonly router: Router = Router();
@@ -12,5 +12,11 @@ export class MenuRouter {
     this.router.get("/", controller.get);
     this.router.get("/settings", controller.getSettings);
     this.router.put("/settings", requireAuth, validate(updateSettingsSchemas), controller.updateSettings);
+    this.router.put(
+      "/settings/pre-orders",
+      requireAuth,
+      validate(updatePreOrdersOpenSchemas),
+      controller.updatePreOrdersOpen,
+    );
   }
 }

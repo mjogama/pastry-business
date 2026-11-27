@@ -5,6 +5,7 @@ import {
   BookOpenIcon,
   ChartNoAxesColumnIcon,
   ChartSplineIcon,
+  ClipboardListIcon,
   ExternalLinkIcon,
   HouseIcon,
   MenuIcon,
@@ -24,6 +25,7 @@ import { cn } from "@/lib/utils";
 const PAGES = [
   { href: "/cms/landing", live: "/", label: "Landing", Icon: HouseIcon },
   { href: "/cms/menu", live: "/menu", label: "Menu", Icon: UtensilsCrossedIcon },
+  { href: "/cms/pre-orders", live: "/menu", label: "Pre-orders", Icon: ClipboardListIcon },
   { href: "/cms/recipes", live: "/recipes", label: "Recipes", Icon: BookOpenIcon },
   { href: "/cms/sales-tracker", live: "/sales-tracker", label: "Sales Tracker", Icon: ChartNoAxesColumnIcon },
   { href: "/cms/progress", live: "/progress", label: "Progress", Icon: ChartSplineIcon },

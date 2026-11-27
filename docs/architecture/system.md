@@ -8,7 +8,7 @@ server/src/app/        wiring, plain functions: server.ts (listen, shutdown), ap
                        middlewares/, routes/v1/routes.ts (mounts each module's router)
 server/src/shared/     @shared/*: errors/AppError.ts, http/response.ts (sendSuccess),
                        middlewares/validate.ts (validate({ body?, query?, params? })), logger.ts (pino; req.log)
-server/src/modules/    one folder per feature (classes): recipes/ (reference), sales-entry/, auth/, categories/, products/, menu/ (`GET /menu`, settings), media/ (Cloudinary uploads), health/ (/health, /ready)
+server/src/modules/    one folder per feature (classes): recipes/ (reference), sales-entry/, auth/, categories/, products/, menu/ (`GET /menu`, settings), pre-order/ (pre-orders, Resend emails), media/ (Cloudinary uploads), health/ (/health, /ready)
 server/prisma/         schema.prisma and migrations
 server/tests/          Vitest + Supertest
 client/app/            routes: (site)/ (/ and /menu), sales-tracker/, recipes/
