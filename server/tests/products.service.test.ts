@@ -98,6 +98,51 @@ describe("ProductsService", () => {
     expect(cleared.discountEndsAt).toBeUndefined();
   });
 
+  describe("sizes", () => {
+    const sizes = [
+      { name: "Small", price: 40, isAvailable: false },
+      { name: "Medium", price: 60, discountPrice: 10, isAvailable: true },
+      { name: "Large", price: 80, isAvailable: true },
+    ];
+
+    it("takes the price from the cheapest size and is available while any size is", async () => {
+      const created = await service.create({
+        ...base,
+        price: 1,
+        discountPrice: 0.5,
+        isAvailable: false,
+        variants: sizes,
+      });
+      expect(created).toMatchObject({ price: 40, isAvailable: true, variants: sizes });
+      expect(created.discountPrice).toBeUndefined();
+    });
+
+    it("needs a size discount for a sale end date", async () => {
+      const plain = sizes.map(({ discountPrice: _, ...v }) => v);
+      await expect(service.create({ ...base, variants: plain, discountEndsAt: "2026-11-30" })).rejects.toBeInstanceOf(
+        BadRequestError,
+      );
+      await service.create({ ...base, variants: sizes, discountEndsAt: "2026-11-30" });
+    });
+
+    it("turns every size on or off with the product's availability", async () => {
+      const product = await service.create({ ...base, variants: sizes });
+      const off = await service.update(product.id, { isAvailable: false });
+      expect(off.isAvailable).toBe(false);
+      expect(off.variants?.every((v) => !v.isAvailable)).toBe(true);
+      const on = await service.update(product.id, { isAvailable: true });
+      expect(on.variants?.every((v) => v.isAvailable)).toBe(true);
+    });
+
+    it("re-derives on a size change and drops the end date with the last discount", async () => {
+      const product = await service.create({ ...base, variants: sizes, discountEndsAt: "2026-11-30" });
+      const plain = sizes.map(({ discountPrice: _, ...v }) => ({ ...v, price: v.price + 5 }));
+      const updated = await service.update(product.id, { variants: plain });
+      expect(updated).toMatchObject({ price: 45, isAvailable: true });
+      expect(updated.discountEndsAt).toBeUndefined();
+    });
+  });
+
   it("404s on a missing product and deletes an existing one", async () => {
     await expect(service.getById(randomUUID())).rejects.toBeInstanceOf(NotFoundError);
     const product = await service.create(base);

@@ -110,7 +110,7 @@ const CheckoutBody = ({
 
   if (!bag) return null;
 
-  const lines = bag.lines.map(({ product, quantity }) => ({ product, quantity, price: priceOnDay(product, day) }));
+  const lines = bag.lines.map((line) => ({ ...line, price: priceOnDay(line.unit, day) }));
   const total = totalOf(lines);
 
   const update = (key: keyof Customer) => (value: string) => setCustomer((current) => ({ ...current, [key]: value }));
@@ -125,7 +125,11 @@ const CheckoutBody = ({
         ...customer,
         pickupDate: day,
         note,
-        items: bag.lines.map(({ product, quantity }) => ({ productId: product.id, quantity })),
+        items: bag.lines.map(({ product, size, quantity }) => ({
+          productId: product.id,
+          ...(size && { variant: size.name }),
+          quantity,
+        })),
         ...(website && { website }),
       });
       try {
@@ -195,10 +199,10 @@ const CheckoutBody = ({
         <p className="text-body-lg text-muted-foreground">Your bag is empty. Add items from the menu.</p>
       ) : (
         <ul className="flex flex-col divide-y divide-border rounded-card border border-border">
-          {lines.map(({ product, quantity, price }) => (
-            <li key={product.id} className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2 px-4 py-3">
+          {lines.map(({ key, label, quantity, price }) => (
+            <li key={key} className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2 px-4 py-3">
               <span className="flex min-w-0 flex-col">
-                <span className="truncate text-body-lg font-semibold text-foreground">{product.name}</span>
+                <span className="truncate text-body-lg font-semibold text-foreground">{label}</span>
                 <span className="text-label text-muted-foreground">
                   <Money amount={price} /> each
                 </span>
@@ -207,8 +211,8 @@ const CheckoutBody = ({
                 value={quantity}
                 min={0}
                 max={MAX_QUANTITY}
-                label={product.name}
-                onChange={(value) => bag.setQuantity(product.id, value)}
+                label={label}
+                onChange={(value) => bag.setQuantity(key, value)}
               />
             </li>
           ))}

@@ -34,6 +34,7 @@ describe("PreOrderService", () => {
   let settings: BusinessSettings;
   let pandesal: Product;
   let ensaymada: Product;
+  let products: Product[];
   let service: PreOrderService;
 
   beforeEach(() => {
@@ -43,7 +44,7 @@ describe("PreOrderService", () => {
     settings = { businessName: "Pato", tagline: "", contactNumber: "", preOrdersOpen: true };
     pandesal = product();
     ensaymada = product({ name: "Ensaymada", price: 60, discountPrice: 10, discountEndsAt: "2026-11-26" });
-    const products = [pandesal, ensaymada, product({ name: "Old", isArchived: true })];
+    products = [pandesal, ensaymada, product({ name: "Old", isArchived: true })];
 
     const repository: PreOrderRepository = {
       findAll: async () => orders,
@@ -108,6 +109,40 @@ describe("PreOrderService", () => {
       { productId: ensaymada.id, productName: "Ensaymada", price: 50, quantity: 1 },
     ]);
     expect(sent).toEqual([{ kind: "placed", code: order.code }]);
+  });
+
+  it("prices a product with sizes per size and needs an available size", async () => {
+    const cake = product({
+      name: "Ube Cake",
+      discountEndsAt: "2026-11-26",
+      variants: [
+        { name: "Small", price: 300, isAvailable: true },
+        { name: "Large", price: 500, discountPrice: 50, isAvailable: true },
+        { name: "Family", price: 800, isAvailable: false },
+      ],
+    });
+    products.push(cake);
+    const order = await service.create(
+      input({
+        items: [
+          { productId: cake.id, variant: "Large", quantity: 1 },
+          { productId: cake.id, variant: "small", quantity: 2 },
+          { productId: cake.id, variant: "large", quantity: 1 },
+        ],
+      }),
+    );
+    expect(order.items).toEqual([
+      { productId: cake.id, productName: "Ube Cake (Large)", price: 450, quantity: 2 },
+      { productId: cake.id, productName: "Ube Cake (Small)", price: 300, quantity: 2 },
+    ]);
+    for (const item of [
+      { productId: cake.id, quantity: 1 },
+      { productId: cake.id, variant: "Family", quantity: 1 },
+      { productId: cake.id, variant: "Huge", quantity: 1 },
+      { productId: pandesal.id, variant: "Large", quantity: 1 },
+    ]) {
+      await expect(service.create(input({ items: [item] }))).rejects.toMatchObject({ statusCode: 400 });
+    }
   });
 
   it("uses the full price once the sale has ended by the hand-over day", async () => {

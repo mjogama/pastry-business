@@ -1,9 +1,11 @@
 import db from "@app/config/db";
 import type { Prisma } from "../../generated/prisma/client";
 import type { ListProductsQuery } from "@common/modules/product";
-import type { DateKey, Product, CreateProductInput, UpdateProductInput } from "./products.schema";
+import type { DateKey, Product, ProductVariant, CreateProductInput, UpdateProductInput } from "./products.schema";
 
-type ProductRow = Prisma.ProductGetPayload<object>;
+const WITH_VARIANTS = { variants: { orderBy: { position: "asc" } } } as const satisfies Prisma.ProductInclude;
+
+type ProductRow = Prisma.ProductGetPayload<{ include: typeof WITH_VARIANTS }>;
 
 /** `discountEndsAt` is a `DATE` column: a calendar day, read and written as UTC midnight. */
 const toDbDay = (day: DateKey) => new Date(`${day}T00:00:00.000Z`);
@@ -23,12 +25,34 @@ const toProduct = (row: ProductRow): Product => ({
   isFeatured: row.isFeatured,
   sortOrder: row.sortOrder,
   isArchived: row.isArchived,
+  ...(row.variants.length > 0 && {
+    variants: row.variants.map(
+      (v): ProductVariant => ({
+        name: v.name,
+        price: v.price.toNumber(),
+        ...(v.discountPrice !== null && { discountPrice: v.discountPrice.toNumber() }),
+        isAvailable: v.isAvailable,
+      }),
+    ),
+  }),
 });
 
-/** Only the keys that were sent; `null` (or an omitted field on create) clears an optional column. */
-const toData = ({ discountEndsAt, ...rest }: CreateProductInput | UpdateProductInput) => ({
+const toVariantRows = (variants: ProductVariant[]) =>
+  variants.map((v, position) => ({
+    position,
+    name: v.name,
+    price: v.price,
+    discountPrice: v.discountPrice ?? null,
+    isAvailable: v.isAvailable,
+  }));
+
+/** Only the keys that were sent; `null` (or an omitted field on create) clears an optional column. Sizes sent replace the old ones. */
+const toData = ({ discountEndsAt, variants, ...rest }: CreateProductInput | UpdateProductInput, replace: boolean) => ({
   ...rest,
   ...(discountEndsAt !== undefined && { discountEndsAt: discountEndsAt === null ? null : toDbDay(discountEndsAt) }),
+  ...(variants !== undefined && {
+    variants: { ...(replace && { deleteMany: {} }), create: toVariantRows(variants) },
+  }),
 });
 
 export interface ProductsRepository {
@@ -36,7 +60,7 @@ export interface ProductsRepository {
   findAll(query?: ListProductsQuery): Promise<Product[]>;
   findById(id: string): Promise<Product | null>;
   create(input: CreateProductInput): Promise<Product>;
-  /** Changes only the fields sent. */
+  /** Changes only the fields sent; `variants` replaces every size. */
   update(id: string, input: UpdateProductInput): Promise<Product>;
   delete(id: string): Promise<void>;
 }
@@ -47,22 +71,32 @@ export class PrismaProductsRepository implements ProductsRepository {
       where: { ...(categoryId && { categoryId }), ...(!includeArchived && { isArchived: false }) },
       orderBy: [{ category: { sortOrder: "asc" } }, { sortOrder: "asc" }, { createdAt: "asc" }],
       ...(limit && { take: limit }),
+      include: WITH_VARIANTS,
     });
     return rows.map(toProduct);
   }
 
   async findById(id: string): Promise<Product | null> {
-    const row = await db.product.findUnique({ where: { id } });
+    const row = await db.product.findUnique({ where: { id }, include: WITH_VARIANTS });
     return row && toProduct(row);
   }
 
   async create(input: CreateProductInput): Promise<Product> {
-    return toProduct(await db.product.create({ data: toData(input) as Prisma.ProductUncheckedCreateInput }));
+    return toProduct(
+      await db.product.create({
+        data: toData(input, false) as Prisma.ProductUncheckedCreateInput,
+        include: WITH_VARIANTS,
+      }),
+    );
   }
 
   async update(id: string, input: UpdateProductInput): Promise<Product> {
     return toProduct(
-      await db.product.update({ where: { id }, data: toData(input) as Prisma.ProductUncheckedUpdateInput }),
+      await db.product.update({
+        where: { id },
+        data: toData(input, true) as Prisma.ProductUncheckedUpdateInput,
+        include: WITH_VARIANTS,
+      }),
     );
   }
 

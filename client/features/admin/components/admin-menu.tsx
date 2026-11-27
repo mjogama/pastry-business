@@ -9,7 +9,7 @@ import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { ProductCardContent } from "@/features/menu/components/product-card";
 import { CONTAINER } from "@/features/menu/lib/layout";
 import { itemCount, toProductView } from "@/features/menu/lib/menu";
-import { isOnSale, manilaToday } from "@/features/menu/lib/pricing";
+import { manilaToday, productOnSale } from "@/features/menu/lib/pricing";
 import type { Category, MenuData, Product } from "@/features/menu/types";
 import { cn } from "@/lib/utils";
 
@@ -110,7 +110,7 @@ export function AdminMenu({ initial }: { initial: MenuData | null }) {
       (filter === "archived" ? p.isArchived : !p.isArchived) &&
       (filter === "all" ||
         filter === "archived" ||
-        (filter === "sale" && isOnSale(p, today)) ||
+        (filter === "sale" && productOnSale(p, today)) ||
         (filter === "out" && !p.isAvailable) ||
         (filter === "featured" && p.isFeatured));
     return [...manager.categories]

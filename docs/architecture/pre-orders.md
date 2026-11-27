@@ -15,6 +15,7 @@ Students reserve items for a school day from `/menu`; the owner hands them over 
 - Hand-over day: a weekday from tomorrow (Manila) up to 14 days ahead. `MAX_DAYS_AHEAD` is in both `server/src/modules/pre-order/pre-order.service.ts` and `client/features/pre-orders/lib/days.ts`.
 - Prices come from the products on the server, at the hand-over day's price (sale while that day ≤ `discountEndsAt`), and are copied into the order.
 - Only available, non-archived products; 1–20 lines, 1–50 each.
+- **Sizes** (`docs/specs/2026-11-27-product-sizes.md`): a product with sizes needs an available size (`variant`) per line; the bag keys lines `productId::size`, and the order line is saved as `Name (Size)` at that size's price, so the bake list, emails and Sales Tracker show the size.
 - Order reads and changes need the owner session (orders hold customers' emails). Only `POST /pre-orders` is public; its hidden `website` field must stay empty.
 
 ## Where to change what

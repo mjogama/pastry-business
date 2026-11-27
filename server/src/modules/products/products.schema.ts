@@ -1,9 +1,23 @@
 import { z } from "zod";
 
 import { cloudinaryUrl, dayKey, money } from "@shared/validation/primitives";
-import type { Product, CreateProductInput, UpdateProductInput, ListProductsQuery } from "@common/modules/product";
+import type {
+  Product,
+  ProductVariant,
+  ListProductsQuery,
+  CreateProductInput,
+  UpdateProductInput,
+} from "@common/modules/product";
 
-export type { DateKey, Product, CreateProductInput, UpdateProductInput } from "@common/modules/product";
+export type {
+  DateKey,
+  Product,
+  ProductVariant,
+  CreateProductInput,
+  UpdateProductInput,
+} from "@common/modules/product";
+
+export const MAX_VARIANTS = 8;
 
 const fields = {
   name: z.string().trim().min(1).max(60),
@@ -19,6 +33,28 @@ const fields = {
   sortOrder: z.number().int().min(0).max(1_000_000),
   isArchived: z.boolean(),
 };
+
+const variant = z
+  .object({
+    name: z.string().trim().min(1, "Name the size").max(30),
+    price: money,
+    discountPrice: money.exactOptional(),
+    isAvailable: z.boolean(),
+  })
+  .refine((v) => v.discountPrice === undefined || v.discountPrice < v.price, {
+    message: "Discount must be lower than the size's price",
+    path: ["discountPrice"],
+  }) satisfies z.ZodType<ProductVariant>;
+
+/** None, or 2–8 sizes with different names. */
+const variants = z
+  .array(variant)
+  .max(MAX_VARIANTS, `At most ${MAX_VARIANTS} sizes`)
+  .refine((list) => list.length !== 1, "Add at least two sizes, or none")
+  .refine(
+    (list) => new Set(list.map((v) => v.name.toLowerCase())).size === list.length,
+    "Each size needs a different name",
+  );
 
 const discountBelowPrice = {
   check: (p: { price?: number | undefined; discountPrice?: number | null | undefined }) =>
@@ -41,6 +77,7 @@ const createProductBody = z
     isFeatured: fields.isFeatured,
     sortOrder: fields.sortOrder,
     isArchived: fields.isArchived,
+    variants: variants.exactOptional(),
   })
   .refine(discountBelowPrice.check, discountBelowPrice) satisfies z.ZodType<CreateProductInput>;
 
@@ -58,6 +95,7 @@ const updateProductBody = z
     isFeatured: fields.isFeatured.exactOptional(),
     sortOrder: fields.sortOrder.exactOptional(),
     isArchived: fields.isArchived.exactOptional(),
+    variants: variants.exactOptional(),
   })
   .refine((body) => Object.keys(body).length > 0, "Send at least one field to change")
   .refine(discountBelowPrice.check, discountBelowPrice) satisfies z.ZodType<UpdateProductInput>;
@@ -65,7 +103,7 @@ const updateProductBody = z
 export const productSchema = z.object({
   id: z.uuid(),
   ...fields,
-}) satisfies z.ZodType<Omit<Product, "description" | "imageUrl" | "discountPrice" | "discountEndsAt">>;
+}) satisfies z.ZodType<Omit<Product, "description" | "imageUrl" | "discountPrice" | "discountEndsAt" | "variants">>;
 
 const idParams = z.object({ id: z.uuid() });
 

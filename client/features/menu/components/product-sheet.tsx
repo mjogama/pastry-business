@@ -1,10 +1,11 @@
 "use client";
 
-import type { ComponentType, ReactNode, RefObject } from "react";
+import { type ComponentType, type ReactNode, type RefObject, useState } from "react";
 
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { Drawer, DrawerContent, DrawerSwipeHandle, DrawerTitle } from "@/components/ui/drawer";
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { AddToBag } from "@/features/pre-orders/components/add-to-bag";
 import { useBag } from "@/features/pre-orders/components/bag-provider";
 import { Money, scrimProps } from "@/features/sales-tracker/components/ui/primitives";
@@ -13,7 +14,7 @@ import { cn } from "@/lib/utils";
 
 import { formatLocalPhone, telHref } from "../lib/phone";
 import { saleEndsText } from "../lib/pricing";
-import type { ProductView } from "../types";
+import type { ProductView, SizeView } from "../types";
 import { AvailabilityTag } from "./availability-tag";
 import { CloseIcon, PhoneIcon } from "./icons";
 import { ProductImage } from "./product-image";
@@ -44,7 +45,13 @@ export const ProductSheet = ({ product, contactNumber, open, onOpenChange, final
           {/* 44×5 drag handle, 10px from the top */}
           <DrawerSwipeHandle className="h-auto pt-2.5 after:bg-input group-data-[swipe-axis=y]/drawer-popup:h-auto group-data-[swipe-axis=y]/drawer-popup:after:h-1.25 group-data-[swipe-axis=y]/drawer-popup:after:w-11" />
           <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain pb-[env(safe-area-inset-bottom)]">
-            <SheetBody product={product} contactNumber={contactNumber} onClose={close} Title={DrawerTitle} />
+            <SheetBody
+              key={product.id}
+              product={product}
+              contactNumber={contactNumber}
+              onClose={close}
+              Title={DrawerTitle}
+            />
           </div>
         </DrawerContent>
       </Drawer>
@@ -54,7 +61,13 @@ export const ProductSheet = ({ product, contactNumber, open, onOpenChange, final
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent variant="product" showCloseButton={false} overlayProps={SCRIM} finalFocus={finalFocus}>
-        <SheetBody product={product} contactNumber={contactNumber} onClose={close} Title={DialogTitle} />
+        <SheetBody
+          key={product.id}
+          product={product}
+          contactNumber={contactNumber}
+          onClose={close}
+          Title={DialogTitle}
+        />
       </DialogContent>
     </Dialog>
   );
@@ -72,8 +85,14 @@ const SheetBody = ({
   /** The overlay's own title part, so the dialog is labelled by the product name. */
   Title: ComponentType<{ className?: string; children: ReactNode }>;
 }) => {
+  const [sizeName, setSizeName] = useState(
+    () => (product.sizes.find((size) => size.isAvailable) ?? product.sizes[0])?.name,
+  );
+  const size = product.sizes.find((s) => s.name === sizeName);
+  // The price box and the pre-order follow the picked size; without sizes, the product itself.
+  const shown = size ?? product;
   // While pre-orders are open, Add to pre-order is the main action and Call steps back to an outline.
-  const preOrdering = useBag() != null && product.isAvailable;
+  const preOrdering = useBag() != null && shown.isAvailable;
   return (
     <>
       <div className="relative px-sheet-inset pt-sheet-inset">
@@ -92,24 +111,27 @@ const SheetBody = ({
         <span className="text-label-sm font-bold tracking-eyebrow-sm text-honey uppercase">{product.categoryName}</span>
         <Title className="font-display text-sheet-title font-bold text-foreground">{product.name}</Title>
         <AvailabilityTag isAvailable={product.isAvailable} size="sheet" />
+        {product.sizes.length > 0 && <SizePicker sizes={product.sizes} value={sizeName} onChange={setSizeName} />}
         <div className="flex flex-col gap-1.5 rounded-card border border-dashed border-input bg-surface-note px-4 py-3.5">
           <span className="flex flex-wrap items-baseline gap-x-2.5 gap-y-1">
-            {product.isOnSale && (
+            {/* Same order as the cards: the struck price, then the price to pay on the right. */}
+            {shown.isOnSale && (
               <s className="text-card-title whitespace-nowrap text-foreground-faint">
                 <span className="sr-only">Was </span>
-                <Money amount={product.price} />
+                <Money amount={shown.price} />
               </s>
             )}
-            <Money amount={product.finalPrice} className="text-sheet-title font-bold whitespace-nowrap text-honey" />
+            <Money amount={shown.finalPrice} className="text-sheet-title font-bold whitespace-nowrap text-honey" />
+            {size && <span className="text-label text-muted-foreground">{size.name}</span>}
           </span>
-          {product.isOnSale && (
+          {shown.isOnSale && (
             <span className="tabular text-label text-foreground-2">
-              Save <Money amount={product.savings} /> · {saleEndsText(product.discountEndsAt)}
+              Save <Money amount={shown.savings} /> · {saleEndsText(shown.discountEndsAt)}
             </span>
           )}
         </div>
         <p className="text-cell leading-description whitespace-pre-line text-foreground-2">{product.description}</p>
-        <AddToBag key={product.id} product={product} onAdded={onClose} />
+        <AddToBag key={sizeName ?? product.id} product={product} size={size} onAdded={onClose} />
         {contactNumber && (
           <a
             href={telHref(contactNumber)}
@@ -125,3 +147,36 @@ const SheetBody = ({
     </>
   );
 };
+
+/** One chip per size; a sold-out size is shown but can't be picked. */
+const SizePicker = ({
+  sizes,
+  value,
+  onChange,
+}: {
+  sizes: SizeView[];
+  value: string | undefined;
+  onChange: (name: string) => void;
+}) => (
+  <div className="flex flex-col gap-2">
+    <span id="size-label" className="text-label font-semibold text-foreground">
+      Size
+    </span>
+    <ToggleGroup
+      aria-labelledby="size-label"
+      variant="chip"
+      size="chip"
+      spacing={2}
+      value={value ? [value] : []}
+      onValueChange={(next) => next[0] && onChange(next[0])}
+      className="flex-wrap"
+    >
+      {sizes.map((size) => (
+        <ToggleGroupItem key={size.name} value={size.name} disabled={!size.isAvailable}>
+          {size.name}
+          {!size.isAvailable && <span className="text-label-sm text-muted-foreground"> · sold out</span>}
+        </ToggleGroupItem>
+      ))}
+    </ToggleGroup>
+  </div>
+);
