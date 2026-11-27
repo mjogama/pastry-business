@@ -187,14 +187,21 @@ model ProductVariant {
 
 /// shared/modules/menu.ts `BusinessSettings`. A single row with the id "singleton".
 model BusinessSettings {
-  id            String   @id @default("singleton")
-  businessName  String   @db.VarChar(60)
-  tagline       String
-  contactNumber String
-  heroImageUrl  String?
+  id                  String   @id @default("singleton")
+  businessName        String   @db.VarChar(60)
+  tagline             String
+  contactNumber       String
+  heroImageUrl        String?
   /// Whether /menu takes pre-orders.
-  preOrdersOpen Boolean  @default(true)
-  updatedAt     DateTime @updatedAt @db.Timestamptz(3)
+  preOrdersOpen       Boolean  @default(true)
+  /// Hand-over weekdays, 1 (Monday) to 5 (Friday).
+  preOrderDays        Int[]    @default([4])
+  /// Orders close at the end of the day this many days before the hand-over day.
+  preOrderCutoffDays  Int      @default(1)
+  /// Closing time on the cut-off day, Manila, HH:mm.
+  preOrderCutoffTime  String   @default("23:59") @db.VarChar(5)
+  preOrderHandoffTime String   @default("") @db.VarChar(80)
+  updatedAt           DateTime @updatedAt @db.Timestamptz(3)
 
   @@map("business_settings")
 }
@@ -208,21 +215,23 @@ enum PreOrderStatus {
 
 /// shared/modules/pre-order.ts `PreOrder`.
 model PreOrder {
-  id           String         @id @default(uuid(7))
-  code         String         @unique @db.VarChar(8)
-  customerName String         @db.VarChar(60)
-  email        String         @db.VarChar(254)
-  handoff      String         @db.VarChar(80)
+  id            String         @id @default(uuid(7))
+  code          String         @unique @db.VarChar(8)
+  customerName  String         @db.VarChar(60)
+  email         String         @db.VarChar(254)
+  contactNumber String         @db.VarChar(20)
+  /// Grade & section on older orders; no longer asked, "" since.
+  handoff       String         @default("") @db.VarChar(80)
   /// Hand-over day (Manila), a calendar date.
-  pickupDate   DateTime       @db.Date
-  note         String         @default("")
-  status       PreOrderStatus @default(pending)
-  cancelReason String?
-  items        PreOrderItem[]
-  salesEntryId String?        @unique
-  salesEntry   SalesEntry?    @relation(fields: [salesEntryId], references: [id], onDelete: SetNull)
-  createdAt    DateTime       @default(now()) @db.Timestamptz(3)
-  updatedAt    DateTime       @updatedAt @db.Timestamptz(3)
+  pickupDate    DateTime       @db.Date
+  note          String         @default("")
+  status        PreOrderStatus @default(pending)
+  cancelReason  String?
+  items         PreOrderItem[]
+  salesEntryId  String?        @unique
+  salesEntry    SalesEntry?    @relation(fields: [salesEntryId], references: [id], onDelete: SetNull)
+  createdAt     DateTime       @default(now()) @db.Timestamptz(3)
+  updatedAt     DateTime       @updatedAt @db.Timestamptz(3)
 
   @@index([pickupDate])
   @@map("pre_orders")

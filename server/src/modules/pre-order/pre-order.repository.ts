@@ -15,6 +15,7 @@ const toPreOrder = (row: PreOrderRow): PreOrder => ({
   code: row.code,
   customerName: row.customerName,
   email: row.email,
+  contactNumber: row.contactNumber,
   handoff: row.handoff,
   pickupDate: fromDbDay(row.pickupDate),
   note: row.note,
@@ -36,7 +37,7 @@ export interface NewPreOrder {
   code: string;
   customerName: string;
   email: string;
-  handoff: string;
+  contactNumber: string;
   pickupDate: DayKey;
   note: string;
   items: PreOrderItem[];

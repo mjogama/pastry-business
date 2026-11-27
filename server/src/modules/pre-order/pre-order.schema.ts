@@ -39,6 +39,7 @@ export const preOrderSchema = z.object({
   code: z.string().length(6),
   customerName: z.string(),
   email: z.email(),
+  contactNumber: z.string(),
   handoff: z.string(),
   pickupDate: dayKey,
   note: z.string(),
@@ -54,7 +55,13 @@ export const createPreOrderSchemas = {
   body: z.object({
     customerName: z.string().trim().min(1, "Enter your name").max(60),
     email: z.string().trim().toLowerCase().pipe(z.email("Enter a valid email").max(254)),
-    handoff: z.string().trim().min(1, "Enter your grade and section").max(80),
+    contactNumber: z
+      .string()
+      .trim()
+      .refine(
+        (value) => /^\+?[\d\s().-]{7,20}$/.test(value) && /^(\D*\d){7,15}\D*$/.test(value),
+        "Enter a valid contact number",
+      ),
     pickupDate: dayKey,
     note: z.string().trim().max(300).default(""),
     items: z

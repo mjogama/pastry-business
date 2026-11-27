@@ -1,8 +1,8 @@
 "use client";
 
 import type { PreOrder, PreOrderStatus } from "@common/modules/pre-order";
-import { MailIcon, RefreshCwIcon } from "lucide-react";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { CheckIcon, ChevronDownIcon, MailIcon, PhoneIcon, RefreshCwIcon } from "lucide-react";
+import { type FormEvent, useCallback, useEffect, useMemo, useState } from "react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -13,7 +13,10 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { NativeSelect, NativeSelectOption } from "@/components/ui/native-select";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Textarea } from "@/components/ui/textarea";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { refreshPublicMenu } from "@/features/admin/actions";
@@ -24,8 +27,17 @@ import { useNow } from "@/features/sales-tracker/hooks/use-environment";
 import { apiErrorMessage } from "@/lib/api/errors";
 import { cn } from "@/lib/utils";
 
-import { deletePreOrder, getPreOrderSettings, listPreOrders, setPreOrdersOpen, updatePreOrderStatus } from "../api";
-import { addDays, dayLabel, orderTotal } from "../lib/days";
+import { deletePreOrder, getPreOrderSettings, listPreOrders, savePreOrderSettings, updatePreOrderStatus } from "../api";
+import {
+  addDays,
+  cutoffText,
+  dayLabel,
+  orderTotal,
+  type PreOrderSchedule,
+  pickupDays,
+  WEEKDAY_NAMES,
+  weekdaysText,
+} from "../lib/days";
 
 /** How far back the page loads, so recent completed and cancelled orders stay in view. */
 /** A label wrapping its field: text above, field below. */
@@ -93,6 +105,7 @@ export function AdminPreOrders() {
   const today = now?.slice(0, 10) ?? null;
   const [orders, setOrders] = useState<PreOrder[] | null>(null);
   const [open, setOpen] = useState<boolean | null>(null);
+  const [schedule, setSchedule] = useState<PreOrderSchedule | null>(null);
   const [loadFailed, setLoadFailed] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -112,6 +125,12 @@ export function AdminPreOrders() {
       ]);
       setOrders(list);
       setOpen(settings.preOrdersOpen);
+      setSchedule({
+        preOrderDays: settings.preOrderDays,
+        preOrderCutoffDays: settings.preOrderCutoffDays,
+        preOrderCutoffTime: settings.preOrderCutoffTime,
+        preOrderHandoffTime: settings.preOrderHandoffTime,
+      });
       setLoadFailed(false);
     } catch (e) {
       setLoadFailed(true);
@@ -180,7 +199,7 @@ export function AdminPreOrders() {
     setError(null);
     setOpen(next);
     try {
-      setOpen((await setPreOrdersOpen(next)).preOrdersOpen);
+      setOpen((await savePreOrderSettings({ open: next })).preOrdersOpen);
       void refreshPublicMenu();
     } catch (e) {
       setOpen(!next);
@@ -232,6 +251,18 @@ export function AdminPreOrders() {
         <p className="rounded-card border border-dashed border-input bg-surface-note px-4 py-3 text-body text-foreground-2">
           Pre-orders are closed: customers don’t see the pre-order buttons on the menu.
         </p>
+      )}
+
+      {schedule && (
+        <ScheduleForm
+          saved={schedule}
+          now={now ?? `${today}T00:00`}
+          today={today}
+          onSaved={(next) => {
+            setSchedule(next);
+            void refreshPublicMenu();
+          }}
+        />
       )}
 
       {error && (
@@ -437,7 +468,7 @@ const OrderCard = ({
     <div className="flex items-start justify-between gap-3">
       <div className="flex min-w-0 flex-col gap-0.5">
         <span className="truncate text-body-lg font-bold text-foreground">{order.customerName}</span>
-        <span className="truncate text-body text-foreground-2">{order.handoff}</span>
+        {order.handoff && <span className="truncate text-body text-foreground-2">{order.handoff}</span>}
       </div>
       <span
         className={cn(
@@ -459,6 +490,15 @@ const OrderCard = ({
         <MailIcon aria-hidden="true" className="size-4" />
         {order.email}
       </a>
+      {order.contactNumber && (
+        <a
+          href={`tel:${order.contactNumber.replace(/[^\d+]/g, "")}`}
+          className="inline-flex min-h-touch items-center gap-1.5 text-honey underline-offset-4 hover:underline"
+        >
+          <PhoneIcon aria-hidden="true" className="size-4" />
+          {order.contactNumber}
+        </a>
+      )}
     </div>
 
     <ul className="flex flex-col gap-1 text-body">
@@ -515,3 +555,251 @@ const OrderCard = ({
     </div>
   </li>
 );
+
+const FIELD =
+  "h-auto min-h-touch rounded-control border border-border bg-surface-inset px-3 py-2.5 text-body-lg text-foreground placeholder:text-foreground-faint md:text-body-lg";
+
+/** Monday to Friday, the days a school hand-over can be. */
+const SCHOOL_DAYS = [1, 2, 3, 4, 5];
+
+/** Hand-over days, cut-off and time: what customers see in "How it works" on /menu and can pick at checkout. */
+const ScheduleForm = ({
+  saved,
+  now,
+  today,
+  onSaved,
+}: {
+  saved: PreOrderSchedule;
+  now: string;
+  today: string;
+  onSaved: (schedule: PreOrderSchedule) => void;
+}) => {
+  const [days, setDays] = useState(saved.preOrderDays);
+  const [cutoff, setCutoff] = useState(saved.preOrderCutoffDays);
+  const [cutoffTime, setCutoffTime] = useState(saved.preOrderCutoffTime);
+  const [time, setTime] = useState(saved.preOrderHandoffTime);
+  const [saving, setSaving] = useState(false);
+  const [message, setMessage] = useState<{ error: boolean; text: string } | null>(null);
+  /** Closed by default: the schedule rarely changes, so the orders stay near the top. */
+  const [expanded, setExpanded] = useState(false);
+
+  const draft: PreOrderSchedule = {
+    preOrderDays: days,
+    preOrderCutoffDays: cutoff,
+    preOrderCutoffTime: cutoffTime,
+    preOrderHandoffTime: time.trim(),
+  };
+  const changed = JSON.stringify(draft) !== JSON.stringify(saved);
+  const next = days.length > 0 ? pickupDays(now, draft)[0] : undefined;
+
+  async function save(event: FormEvent) {
+    event.preventDefault();
+    setSaving(true);
+    setMessage(null);
+    try {
+      const settings = await savePreOrderSettings({
+        days,
+        cutoffDays: cutoff,
+        cutoffTime,
+        handoffTime: time.trim(),
+      });
+      setMessage({ error: false, text: "Schedule saved. The menu shows it now." });
+      onSaved({
+        preOrderDays: settings.preOrderDays,
+        preOrderCutoffDays: settings.preOrderCutoffDays,
+        preOrderCutoffTime: settings.preOrderCutoffTime,
+        preOrderHandoffTime: settings.preOrderHandoffTime,
+      });
+    } catch (e) {
+      setMessage({ error: true, text: apiErrorMessage(e) });
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  const summary = [
+    days.length > 0 ? weekdaysText(days, true) : "No days picked",
+    cutoffTime && days.length > 0 ? `orders close ${cutoffText(draft)}` : null,
+    time.trim() || null,
+  ]
+    .filter(Boolean)
+    .join(" · ");
+
+  return (
+    <section
+      aria-labelledby="schedule-title"
+      className="flex flex-col rounded-card border border-border bg-surface-product"
+    >
+      <h2 id="schedule-title">
+        <Button
+          type="button"
+          variant="bare"
+          aria-expanded={expanded}
+          aria-controls="schedule-body"
+          onClick={() => setExpanded((open) => !open)}
+          className="h-auto min-h-touch w-full justify-between gap-3 rounded-card px-5 py-3 text-left whitespace-normal outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
+        >
+          <span className="flex min-w-0 flex-col">
+            <span className="font-display text-section font-bold text-foreground">Hand-over schedule</span>
+            <span className="truncate text-body font-normal text-muted-foreground">{summary}</span>
+          </span>
+          <ChevronDownIcon
+            aria-hidden="true"
+            className={cn(
+              "size-5 shrink-0 text-muted-foreground transition-transform motion-reduce:transition-none",
+              expanded && "rotate-180",
+            )}
+          />
+        </Button>
+      </h2>
+
+      {expanded && (
+        <form
+          id="schedule-body"
+          onSubmit={save}
+          className="flex flex-col gap-3.5 border-t border-border px-5 pt-3.5 pb-4"
+        >
+          <p className="text-body text-muted-foreground">
+            Customers see this on the menu before they order, and can only pick these days.
+          </p>
+
+          <div className="grid gap-3.5 sm:grid-cols-2 lg:grid-cols-3">
+            <div className={cn(FIELD_LABEL, "flex")}>
+              <span id="schedule-days" className="text-label font-semibold text-foreground">
+                Hand-over days
+              </span>
+              <DaysSelect labelledBy="schedule-days" value={days} onChange={setDays} />
+              {days.length === 0 && <span className="text-label text-destructive">Pick at least one day.</span>}
+            </div>
+
+            <Label className={FIELD_LABEL}>
+              <span className="text-label font-semibold text-foreground">Orders close</span>
+              <div className="flex gap-2">
+                <NativeSelect
+                  value={String(cutoff)}
+                  onChange={(e) => setCutoff(Number(e.target.value))}
+                  className="text-body-lg"
+                  wrapperClassName="min-w-0 flex-1"
+                >
+                  {[1, 2, 3, 4, 5, 6].map((n) => (
+                    <NativeSelectOption key={n} value={String(n)}>
+                      {n === 1 ? "The day before" : `${n} days before`}
+                    </NativeSelectOption>
+                  ))}
+                </NativeSelect>
+                <Input
+                  type="time"
+                  step={60}
+                  required
+                  aria-label="Closing time (Manila)"
+                  className={cn(FIELD, "h-11 min-h-0 w-32 shrink-0 py-0")}
+                  value={cutoffTime}
+                  onChange={(e) => setCutoffTime(e.target.value.slice(0, 5))}
+                />
+              </div>
+            </Label>
+
+            <Label className={cn(FIELD_LABEL, "sm:col-span-2 lg:col-span-1")}>
+              <span className="text-label font-semibold text-foreground">
+                Time and place <span className="font-normal text-muted-foreground">(optional)</span>
+              </span>
+              <Input
+                className={cn(FIELD, "h-11 min-h-0 py-0")}
+                value={time}
+                onChange={(e) => setTime(e.target.value)}
+                placeholder="e.g. 12:00–1:00 PM, canteen"
+                maxLength={80}
+              />
+            </Label>
+          </div>
+
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <p
+              role={message ? (message.error ? "alert" : "status") : undefined}
+              className={cn("min-w-0 flex-1 text-label", message?.error ? "text-destructive" : "text-foreground-2")}
+            >
+              {message
+                ? message.text
+                : next
+                  ? `Next day customers can pick: ${dayLabel(next, today)} (Manila time).`
+                  : null}
+            </p>
+            <Button type="submit" size="pill" disabled={saving || !changed || days.length === 0 || !cutoffTime}>
+              {saving ? "Saving…" : "Save schedule"}
+            </Button>
+          </div>
+        </form>
+      )}
+    </section>
+  );
+};
+
+const DAY_SHORT = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+
+/** A select-style button that opens a checklist of school days, so the days take one field's space. */
+const DaysSelect = ({
+  labelledBy,
+  value,
+  onChange,
+}: {
+  labelledBy: string;
+  value: number[];
+  onChange: (days: number[]) => void;
+}) => {
+  const label =
+    value.length === 0
+      ? "Pick days"
+      : value.length === 1
+        ? (WEEKDAY_NAMES[value[0] ?? 0] ?? "")
+        : value.map((d) => DAY_SHORT[d]).join(", ");
+  const toggle = (day: number, on: boolean) =>
+    onChange((on ? [...value, day] : value.filter((d) => d !== day)).sort((a, b) => a - b));
+
+  return (
+    <Popover>
+      <PopoverTrigger
+        aria-labelledby={labelledBy}
+        aria-describedby={`${labelledBy}-value`}
+        className="relative flex h-11 w-full cursor-pointer items-center rounded-card border border-border bg-surface-inset pr-8 pl-3 text-left text-body-lg font-semibold text-honey outline-none transition-colors hover:border-input focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
+      >
+        <span id={`${labelledBy}-value`} className="truncate">
+          {label}
+        </span>
+        <ChevronDownIcon
+          aria-hidden="true"
+          className="pointer-events-none absolute top-1/2 right-2.5 size-4 -translate-y-1/2 text-muted-foreground"
+        />
+      </PopoverTrigger>
+      <PopoverContent align="start" className="w-56 gap-0 p-1.5">
+        <fieldset className="m-0 flex min-w-0 flex-col border-0 p-0">
+          <legend className="sr-only">Hand-over days</legend>
+          {SCHOOL_DAYS.map((d) => {
+            const on = value.includes(d);
+            return (
+              <Button
+                key={d}
+                type="button"
+                variant="bare"
+                role="checkbox"
+                aria-checked={on}
+                onClick={() => toggle(d, !on)}
+                className="h-auto min-h-touch justify-start gap-3 rounded-control px-2.5 text-body-lg font-normal text-foreground hover:bg-muted"
+              >
+                <span
+                  aria-hidden="true"
+                  className={cn(
+                    "flex size-5 shrink-0 items-center justify-center rounded-sm border",
+                    on ? "border-primary bg-primary text-primary-foreground" : "border-input bg-surface-inset",
+                  )}
+                >
+                  {on && <CheckIcon className="size-3.5" />}
+                </span>
+                {WEEKDAY_NAMES[d]}
+              </Button>
+            );
+          })}
+        </fieldset>
+      </PopoverContent>
+    </Popover>
+  );
+};

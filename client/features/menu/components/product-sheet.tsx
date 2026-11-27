@@ -131,7 +131,7 @@ const SheetBody = ({
           )}
         </div>
         <p className="text-cell leading-description whitespace-pre-line text-foreground-2">{product.description}</p>
-        <AddToBag key={sizeName ?? product.id} product={product} size={size} onAdded={onClose} />
+        <AddToBag key={product.id} product={product} size={size} onAdded={onClose} />
         {contactNumber && (
           <a
             href={telHref(contactNumber)}

@@ -1,7 +1,8 @@
 import type { MenuRepository } from "./menu.repository";
 import type { ProductsRepository } from "../products/products.repository";
+import type { UpdatePreOrderSettingsInput } from "@common/modules/pre-order";
 import type { CategoriesRepository } from "../categories/categories.repository";
-import type { BusinessSettings, MenuData, UpdateBusinessSettingsInput } from "./menu.schema";
+import type { MenuData, BusinessSettings, UpdateBusinessSettingsInput } from "./menu.schema";
 
 /** Shown until the owner saves settings. The contact number is left empty so no placeholder number is ever dialed. */
 export const DEFAULT_SETTINGS: BusinessSettings = {
@@ -9,6 +10,10 @@ export const DEFAULT_SETTINGS: BusinessSettings = {
   tagline: "",
   contactNumber: "",
   preOrdersOpen: true,
+  preOrderDays: [4],
+  preOrderCutoffDays: 1,
+  preOrderCutoffTime: "23:59",
+  preOrderHandoffTime: "",
 };
 
 export class MenuService {
@@ -36,8 +41,30 @@ export class MenuService {
     return this.repository.saveSettings(input);
   }
 
-  updatePreOrdersOpen(open: boolean): Promise<BusinessSettings> {
-    const { preOrdersOpen: _, ...defaults } = DEFAULT_SETTINGS;
-    return this.repository.savePreOrdersOpen(open, defaults);
+  updatePreOrderSettings({
+    open,
+    days,
+    cutoffDays,
+    cutoffTime,
+    handoffTime,
+  }: UpdatePreOrderSettingsInput): Promise<BusinessSettings> {
+    const {
+      preOrdersOpen: _o,
+      preOrderDays: _d,
+      preOrderCutoffDays: _c,
+      preOrderCutoffTime: _ct,
+      preOrderHandoffTime: _t,
+      ...defaults
+    } = DEFAULT_SETTINGS;
+    return this.repository.savePreOrderSettings(
+      {
+        ...(open !== undefined && { preOrdersOpen: open }),
+        ...(days !== undefined && { preOrderDays: days }),
+        ...(cutoffDays !== undefined && { preOrderCutoffDays: cutoffDays }),
+        ...(cutoffTime !== undefined && { preOrderCutoffTime: cutoffTime }),
+        ...(handoffTime !== undefined && { preOrderHandoffTime: handoffTime }),
+      },
+      defaults,
+    );
   }
 }

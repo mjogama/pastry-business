@@ -1,0 +1,4 @@
+-- AlterTable
+ALTER TABLE "business_settings" ADD COLUMN "preOrderDays" INTEGER[] DEFAULT ARRAY[4]::INTEGER[],
+ADD COLUMN "preOrderCutoffDays" INTEGER NOT NULL DEFAULT 1,
+ADD COLUMN "preOrderHandoffTime" VARCHAR(80) NOT NULL DEFAULT '';

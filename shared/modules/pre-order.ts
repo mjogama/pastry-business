@@ -24,9 +24,11 @@ export interface PreOrder {
   /** 1–60 characters. */
   customerName: string;
   email: string;
-  /** Grade & section, or where to find the customer at school. 1–80 characters. */
+  /** Phone number to reach the customer, up to 20 characters. Empty on orders placed before it was asked. */
+  contactNumber: string;
+  /** Grade & section from orders placed before checkout stopped asking; `""` on newer orders. */
   handoff: string;
-  /** Hand-over day: a weekday, tomorrow (Manila) or later. */
+  /** Hand-over day: one of the owner's selling weekdays, from the cut-off on (Manila). */
   pickupDate: DayKey;
   /** Up to 300 characters, may be empty. */
   note: string;
@@ -54,7 +56,8 @@ export interface CreatePreOrderItemInput {
 export interface CreatePreOrderInput {
   customerName: string;
   email: string;
-  handoff: string;
+  /** 7–15 digits; spaces, dashes, dots, brackets and a leading + are allowed. */
+  contactNumber: string;
   pickupDate: DayKey;
   note?: string;
   items: CreatePreOrderItemInput[];
@@ -77,7 +80,12 @@ export interface UpdatePreOrderStatusInput {
   reason?: string;
 }
 
-/** `PUT /menu/settings/pre-orders`. */
-export interface UpdatePreOrdersOpenInput {
-  open: boolean;
+/** `PUT /menu/settings/pre-orders`: any of these, at least one. See `BusinessSettings` for the rules. */
+export interface UpdatePreOrderSettingsInput {
+  open?: boolean;
+  days?: number[];
+  cutoffDays?: number;
+  /** `HH:mm`, 24-hour, Manila. */
+  cutoffTime?: string;
+  handoffTime?: string;
 }

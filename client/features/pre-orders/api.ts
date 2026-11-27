@@ -3,6 +3,7 @@ import type {
   CreatePreOrderInput,
   ListPreOrdersQuery,
   PreOrder,
+  UpdatePreOrderSettingsInput,
   UpdatePreOrderStatusInput,
 } from "@common/modules/pre-order";
 
@@ -27,6 +28,6 @@ export const deletePreOrder = (id: string) => api.delete<null>(`/pre-orders/${id
 export const getPreOrderSettings = async () =>
   normalizeSettings(await api.get<BusinessSettings>("/menu/settings", { cache: "no-store" }));
 
-/** PUT /menu/settings/pre-orders (owner). */
-export const setPreOrdersOpen = async (open: boolean) =>
-  normalizeSettings(await api.put<BusinessSettings>("/menu/settings/pre-orders", { open }));
+/** PUT /menu/settings/pre-orders (owner): the switch, hand-over days, cut-off and time. */
+export const savePreOrderSettings = async (input: UpdatePreOrderSettingsInput) =>
+  normalizeSettings(await api.put<BusinessSettings>("/menu/settings/pre-orders", input));

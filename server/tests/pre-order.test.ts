@@ -41,7 +41,16 @@ describe("PreOrderService", () => {
     orders = [];
     entries = [];
     sent = [];
-    settings = { businessName: "Pato", tagline: "", contactNumber: "", preOrdersOpen: true };
+    settings = {
+      businessName: "Pato",
+      tagline: "",
+      contactNumber: "",
+      preOrdersOpen: true,
+      preOrderDays: [1, 2, 3, 4, 5],
+      preOrderCutoffDays: 1,
+      preOrderCutoffTime: "23:59",
+      preOrderHandoffTime: "",
+    };
     pandesal = product();
     ensaymada = product({ name: "Ensaymada", price: 60, discountPrice: 10, discountEndsAt: "2026-11-26" });
     products = [pandesal, ensaymada, product({ name: "Old", isArchived: true })];
@@ -53,6 +62,7 @@ describe("PreOrderService", () => {
       create: async (input: NewPreOrder) => {
         const order: PreOrder = {
           ...input,
+          handoff: "",
           id: randomUUID(),
           status: "pending",
           createdAt: NOW.toISOString(),
@@ -90,7 +100,7 @@ describe("PreOrderService", () => {
   const input = (overrides = {}) => ({
     customerName: "Ana",
     email: "ana@example.com",
-    handoff: "Grade 8 - Rizal",
+    contactNumber: "0917 123 4567",
     pickupDate: "2026-11-26",
     items: [
       { productId: pandesal.id, quantity: 3 },
@@ -104,6 +114,7 @@ describe("PreOrderService", () => {
     const order = await service.create(input());
     expect(order.code).toMatch(/^[2-9A-HJ-NP-Z]{6}$/);
     expect(order.note).toBe("");
+    expect(order.contactNumber).toBe("0917 123 4567");
     expect(order.items).toEqual([
       { productId: pandesal.id, productName: "Ube Pandesal", price: 40, quantity: 5 },
       { productId: ensaymada.id, productName: "Ensaymada", price: 50, quantity: 1 },
@@ -158,6 +169,27 @@ describe("PreOrderService", () => {
     await expect(service.create(input({ pickupDate }))).rejects.toMatchObject({ statusCode: 400 });
   });
 
+  it("only takes the owner's selling days, from the cut-off on", async () => {
+    settings.preOrderDays = [4];
+    await expect(service.create(input({ pickupDate: "2026-11-27" }))).rejects.toThrow(
+      "only hand over pre-orders on Thursdays",
+    );
+    expect((await service.create(input({ pickupDate: "2026-11-26" }))).pickupDate).toBe("2026-11-26");
+    settings.preOrderCutoffDays = 2;
+    await expect(service.create(input({ pickupDate: "2026-11-26" }))).rejects.toThrow("Orders for that day are closed");
+    expect((await service.create(input({ pickupDate: "2026-12-03" }))).pickupDate).toBe("2026-12-03");
+  });
+
+  it("closes a day at the cut-off time (Manila)", async () => {
+    // Now is Wednesday 10:00; Thursday's orders close Wednesday at the cut-off time.
+    settings.preOrderCutoffTime = "09:30";
+    await expect(service.create(input({ pickupDate: "2026-11-26" }))).rejects.toThrow("Orders for that day are closed");
+    settings.preOrderCutoffTime = "10:00";
+    await expect(service.create(input({ pickupDate: "2026-11-26" }))).rejects.toThrow("Orders for that day are closed");
+    settings.preOrderCutoffTime = "10:01";
+    expect((await service.create(input({ pickupDate: "2026-11-26" }))).pickupDate).toBe("2026-11-26");
+  });
+
   it("refuses archived, unknown or out-of-stock products, the honeypot and closed pre-orders", async () => {
     await expect(service.create(input({ items: [{ productId: randomUUID(), quantity: 1 }] }))).rejects.toMatchObject({
       statusCode: 400,
@@ -188,7 +220,7 @@ describe("PreOrderService", () => {
     const done = await service.updateStatus(id, { status: "completed" });
     expect(done.status).toBe("completed");
     expect(done.salesEntryId).toBeDefined();
-    expect(entries).toEqual([{ date: "2026-11-25T10:00", title: `Pre-order ${code}`, note: "Ana · Grade 8 - Rizal" }]);
+    expect(entries).toEqual([{ date: "2026-11-25T10:00", title: `Pre-order ${code}`, note: "Ana" }]);
     expect(sent.map((s) => s.kind)).toEqual(["placed", "confirmed"]);
     await expect(service.updateStatus(id, { status: "cancelled" })).rejects.toMatchObject({ statusCode: 409 });
   });
@@ -221,11 +253,15 @@ describe("pre-order helpers", () => {
       pickupDate: "2026-11-26",
       items: [{ productName: "Pan & Co", price: 10, quantity: 2 }],
     } as PreOrder;
-    const { subject, html } = renderPreOrderEmail("placed", order, "Pato");
+    const { subject, html } = renderPreOrderEmail("placed", order, {
+      businessName: "Pato",
+      preOrderHandoffTime: "12–1 PM <canteen>",
+    });
     expect(subject).toContain("ABC234");
     expect(html).toContain("&lt;b&gt;Ana&lt;/b&gt;");
     expect(html).toContain("Pan &amp; Co");
     expect(html).not.toContain("<b>Ana");
+    expect(html).toContain("12–1 PM &lt;canteen&gt;");
   });
 });
 
@@ -233,11 +269,16 @@ describe("pre-order routes", () => {
   const app = createApp();
 
   it("validates a new order before touching the database", async () => {
-    const res = await request(app)
-      .post("/api/v1/pre-orders")
-      .send({ customerName: " ", email: "nope", handoff: "8", pickupDate: "2026-13-01", items: [] });
+    const res = await request(app).post("/api/v1/pre-orders").send({
+      customerName: " ",
+      email: "nope",
+      contactNumber: "12-34",
+      pickupDate: "2026-13-01",
+      items: [],
+    });
     expect(res.status).toBe(400);
     expect(res.body.details.map((d: { path: string }) => d.path).sort()).toEqual([
+      "contactNumber",
       "customerName",
       "email",
       "items",
@@ -260,5 +301,16 @@ describe("pre-order routes", () => {
       .send({ status: "confirmed", reason: "x" })
       .expect(400);
     await request(app).put("/api/v1/menu/settings/pre-orders").set("Cookie", cookie).send({}).expect(400);
+    for (const body of [
+      { days: [] },
+      { days: [6] },
+      { cutoffDays: 0 },
+      { cutoffDays: 7 },
+      { cutoffTime: "24:00" },
+      { cutoffTime: "6pm" },
+      { handoffTime: "x".repeat(81) },
+    ]) {
+      await request(app).put("/api/v1/menu/settings/pre-orders").set("Cookie", cookie).send(body).expect(400);
+    }
   });
 });

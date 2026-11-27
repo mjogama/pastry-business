@@ -17,6 +17,20 @@ export const FALLBACK_SETTINGS: BusinessSettings = {
   tagline: "",
   contactNumber: "",
   preOrdersOpen: false,
+  preOrderDays: [4],
+  preOrderCutoffDays: 1,
+  preOrderCutoffTime: "23:59",
+  preOrderHandoffTime: "",
+};
+
+const preOrderDays = (v: unknown) => {
+  const days = Array.isArray(v) ? v.filter((d): d is number => Number.isInteger(d) && d >= 1 && d <= 5) : [];
+  return days.length > 0 ? [...new Set(days)].sort((a, b) => a - b) : FALLBACK_SETTINGS.preOrderDays;
+};
+
+const cutoffDays = (v: unknown) => {
+  const n = num(v);
+  return n !== undefined && Number.isInteger(n) && n >= 1 && n <= 6 ? n : FALLBACK_SETTINGS.preOrderCutoffDays;
 };
 
 const imageUrl = (v: unknown) => {
@@ -36,6 +50,12 @@ export const normalizeSettings = (settings: BusinessSettings | null | undefined)
     contactNumber: text(settings?.contactNumber),
     ...(hero && { heroImageUrl: hero }),
     preOrdersOpen: settings?.preOrdersOpen === true,
+    preOrderDays: preOrderDays(settings?.preOrderDays),
+    preOrderCutoffDays: cutoffDays(settings?.preOrderCutoffDays),
+    preOrderCutoffTime: /^([01]\d|2[0-3]):[0-5]\d$/.test(text(settings?.preOrderCutoffTime))
+      ? text(settings?.preOrderCutoffTime)
+      : FALLBACK_SETTINGS.preOrderCutoffTime,
+    preOrderHandoffTime: text(settings?.preOrderHandoffTime),
   };
 };
 

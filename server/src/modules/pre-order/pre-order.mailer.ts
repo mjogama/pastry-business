@@ -1,12 +1,13 @@
 import { env } from "@app/config/env";
 import { logger } from "@shared/logger";
 import type { PreOrder } from "./pre-order.schema";
+import type { BusinessSettings } from "@common/modules/menu";
 
 export type PreOrderEmailKind = "placed" | "confirmed" | "cancelled";
 
 export interface PreOrderMailer {
   /** Never throws: a failed email is logged and the request carries on. */
-  send(kind: PreOrderEmailKind, order: PreOrder, businessName: string): Promise<void>;
+  send(kind: PreOrderEmailKind, order: PreOrder, settings: BusinessSettings): Promise<void>;
 }
 
 const peso = new Intl.NumberFormat("en-PH", { style: "currency", currency: "PHP" });
@@ -23,16 +24,24 @@ export const orderTotal = (order: Pick<PreOrder, "items">) =>
   Math.round(order.items.reduce((sum, item) => sum + item.price * item.quantity, 0) * 100) / 100;
 
 /** Subject and HTML body for one email. Exported for tests. */
-export const renderPreOrderEmail = (kind: PreOrderEmailKind, order: PreOrder, businessName: string) => {
+export const renderPreOrderEmail = (
+  kind: PreOrderEmailKind,
+  order: PreOrder,
+  { businessName, preOrderHandoffTime }: Pick<BusinessSettings, "businessName" | "preOrderHandoffTime">,
+) => {
   const day = dayText(order.pickupDate);
+  const when = preOrderHandoffTime ? ` · ${escapeHtml(preOrderHandoffTime)}` : "";
+  const onTime = preOrderHandoffTime
+    ? ` We’re only there ${escapeHtml(preOrderHandoffTime)}, so please come on time.`
+    : "";
   const heading = {
     placed: `We got your pre-order for ${day}`,
     confirmed: `Your pre-order for ${day} is confirmed`,
     cancelled: `Your pre-order for ${day} was cancelled`,
   }[kind];
   const message = {
-    placed: "We’ll confirm it soon. You pay when we hand it over at school.",
-    confirmed: `We’ll bake it for you and hand it over at school (${escapeHtml(order.handoff)}). Please have ${peso.format(orderTotal(order))} ready.`,
+    placed: `We’ll confirm it soon. You pay when we hand it over at school.${onTime}`,
+    confirmed: `We’ll bake it for you and hand it over at school. Please have ${peso.format(orderTotal(order))} ready.${onTime}`,
     cancelled: order.cancelReason
       ? `Reason: ${escapeHtml(order.cancelReason)}`
       : "Sorry about that. You can place a new pre-order on our menu anytime.",
@@ -46,7 +55,7 @@ export const renderPreOrderEmail = (kind: PreOrderEmailKind, order: PreOrder, bu
   const html = `<div style="font-family:system-ui,sans-serif;color:#2b2118;max-width:520px">
 <h2 style="margin:0 0 8px">${escapeHtml(heading)}</h2>
 <p style="margin:0 0 16px">Hi ${escapeHtml(order.customerName)}, ${message}</p>
-<p style="margin:0 0 8px"><strong>Order ${order.code}</strong> · ${escapeHtml(day)}</p>
+<p style="margin:0 0 8px"><strong>Order ${order.code}</strong> · ${escapeHtml(day)}${when}</p>
 <table style="border-collapse:collapse;width:100%">${rows}
 <tr><td style="padding:8px 12px 0 0;border-top:1px solid #ddd"><strong>Total</strong></td><td style="padding:8px 0 0;border-top:1px solid #ddd;text-align:right"><strong>${peso.format(orderTotal(order))}</strong></td></tr></table>
 <p style="margin:24px 0 0;color:#6b5d4f">${escapeHtml(businessName)}</p></div>`;
@@ -60,9 +69,9 @@ export class ResendPreOrderMailer implements PreOrderMailer {
     private readonly from = env.EMAIL_FROM,
   ) {}
 
-  async send(kind: PreOrderEmailKind, order: PreOrder, businessName: string): Promise<void> {
+  async send(kind: PreOrderEmailKind, order: PreOrder, settings: BusinessSettings): Promise<void> {
     if (!this.apiKey || !this.from) return;
-    const { subject, html } = renderPreOrderEmail(kind, order, businessName);
+    const { subject, html } = renderPreOrderEmail(kind, order, settings);
     try {
       const response = await fetch("https://api.resend.com/emails", {
         method: "POST",

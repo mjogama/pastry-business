@@ -1,29 +1,39 @@
-"use client";
-
 import { CalendarClockIcon } from "lucide-react";
 
-import { Button } from "@/components/ui/button";
-import { itemCount } from "@/features/menu/lib/menu";
+import { getBusinessSettings } from "@/features/menu/data/menu-data";
 
-import { useBag } from "./bag-provider";
+import { weekdaysText } from "../lib/days";
 
-/** Under the /menu title while pre-orders are open: how it works, and Review once the bag has items. */
-export const PreOrderNotice = () => {
-  const bag = useBag();
-  if (!bag) return null;
+/**
+ * In the /menu header, beside the title (under it on narrow screens), while pre-orders are open: the owner's hand-over days and
+ * time in a card. `#pre-order` is the landing hero's "Pre-order for school" target.
+ */
+export const PreOrderNotice = async () => {
+  const settings = await getBusinessSettings();
+  if (!settings.preOrdersOpen) return null;
+  const days = weekdaysText(settings.preOrderDays, true);
+  const time = settings.preOrderHandoffTime;
+
   return (
-    <section id="pre-order" aria-label="Pre-orders" className="flex flex-wrap items-center justify-between gap-4 rounded-card border border-dashed border-input bg-surface-note px-5 py-4">
-      <div className="flex min-w-0 items-center gap-3.5">
-        <CalendarClockIcon aria-hidden="true" className="mt-0.5 size-6 shrink-0 text-honey" />
-        <div className="flex min-w-0 flex-col gap-1">
-          <span className="text-body-lg font-bold text-foreground">Pre-order for school</span>
-        </div>
+    <section
+      id="pre-order"
+      aria-labelledby="pre-order-title"
+      className="flex scroll-mt-24 items-center md:shrink-0 gap-3.5 rounded-card border border-dashed border-input bg-surface-note px-5 py-4"
+    >
+      <CalendarClockIcon aria-hidden="true" className="size-6 shrink-0 text-honey" />
+      <div className="flex min-w-0 flex-col gap-0.5">
+        <h2 id="pre-order-title" className="text-body-lg font-bold text-foreground">
+          Pre-order for school
+        </h2>
+        <p className="text-body text-foreground-2">
+          Hand-over on <strong className="font-semibold text-foreground">{days} only</strong>
+          {time && (
+            <>
+              , <strong className="font-semibold text-foreground">{time}</strong>
+            </>
+          )}
+        </p>
       </div>
-      {bag.count > 0 && (
-        <Button size="pill" onClick={bag.openCheckout} aria-haspopup="dialog">
-          Review · {itemCount(bag.count)}
-        </Button>
-      )}
     </section>
   );
 };
