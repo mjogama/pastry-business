@@ -1,6 +1,6 @@
 import type { PreOrder } from "@common/modules/pre-order";
 
-import type { DateKey, ProductView } from "@/features/menu/types";
+import type { DateKey, PriceView } from "@/features/menu/types";
 
 /** Must match `MAX_DAYS_AHEAD` in `server/src/modules/pre-order/pre-order.service.ts`. */
 export const MAX_DAYS_AHEAD = 14;
@@ -34,8 +34,8 @@ export const dayLabel = (day: DateKey, today?: DateKey) => {
 };
 
 /** The price per piece on the hand-over day, as the server works it out: the sale counts while that day ≤ its end. */
-export const priceOnDay = (product: ProductView, day: DateKey) =>
-  product.isOnSale && (!product.discountEndsAt || day <= product.discountEndsAt) ? product.finalPrice : product.price;
+export const priceOnDay = (priced: PriceView, day: DateKey) =>
+  priced.isOnSale && (!priced.discountEndsAt || day <= priced.discountEndsAt) ? priced.finalPrice : priced.price;
 
 /** Whole-peso-safe sum of price × quantity. */
 export const totalOf = (lines: { price: number; quantity: number }[]) =>

@@ -31,10 +31,29 @@ export const ProductCardContent = ({ product }: { product: ProductView }) => (
         {product.shortDescription}
       </span>
       <PriceBlock product={product} variant="menu" className="pt-1" />
+      <SizeList sizes={product.sizes} />
       {!product.isAvailable && <AvailabilityTag isAvailable={false} />}
     </span>
   </>
 );
+
+/** The sizes in stock as small chips (the card's aria-label already reads them out). */
+const SizeList = ({ sizes }: { sizes: ProductView["sizes"] }) => {
+  const inStock = sizes.filter((size) => size.isAvailable);
+  if (inStock.length === 0) return null;
+  return (
+    <span aria-hidden="true" className="flex flex-wrap gap-1.5">
+      {inStock.map((size) => (
+        <span
+          key={size.name}
+          className="rounded-pill border border-border px-2.5 py-0.5 text-label-sm whitespace-nowrap text-muted-foreground"
+        >
+          {size.name}
+        </span>
+      ))}
+    </span>
+  );
+};
 
 /**
  * Today's picks card (§7.1): image, SALE badge, name, price. Links to that product on /menu,

@@ -22,10 +22,12 @@ Paths are under `client/features/menu/` unless shown in full.
 | Image upload | `POST /media/images` (`server/src/modules/media`) | Cloudinary env vars; `images.remotePatterns` in `client/next.config.ts` |
 | Phone display and `tel:` links | `lib/phone.ts` | E.164 in data, local format on screen |
 | Pre-order bag, sheet CTA, landing CTA | `client/features/pre-orders/` | `docs/architecture/pre-orders.md` |
+| Sizes: card size chips, size picker | `sizeViews()` / `headlinePrice()` in `lib/pricing.ts`, `toProductView()` in `lib/menu.ts`, `SizeList` in `components/product-card.tsx`, `SizePicker` in `components/product-sheet.tsx` | Spec `docs/specs/2026-11-27-product-sizes.md` |
 
 ## Rules that must stay true
 
 - **Sale:** `discountPrice` is the amount taken off (₱40 with ₱15 off sells for ₱25, ₱40 struck). On sale while `0 < discountPrice < price` and today ≤ `discountEndsAt`; it ends by itself the next day.
+- **Sizes (optional):** a product can have 2–8 sizes, each with its own price, amount off and availability; the product's sale end date covers them all. The menu card shows the lowest price today and chips for the sizes in stock; on sale when any size is; out of stock when every size is. The sheet's size picker starts on the first available size.
 - **Out of stock:** still shown, dimmed, greyscale, last in its category; the sheet still opens. Never in Today's picks.
 - **Picks:** up to 4, featured first, then available on-sale items; the section hides when empty.
 - **Sort:** available first, then `sortOrder`. Empty categories and archived products are hidden. Missing images get a placeholder.

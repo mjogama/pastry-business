@@ -9,6 +9,7 @@ export type PreOrderStatus = "pending" | "confirmed" | "completed" | "cancelled"
 export interface PreOrderItem {
   /** Missing once the product has been deleted; the name and price stay. */
   productId?: string;
+  /** With the size for a product with sizes, e.g. `Ube Cake (Large)`. */
   productName: string;
   /** PHP per piece on the hand-over day, copied when the order was placed. */
   price: number;
@@ -32,7 +33,7 @@ export interface PreOrder {
   status: PreOrderStatus;
   /** Set when the owner gave one while cancelling. */
   cancelReason?: string;
-  /** 1–20 lines, one per product. */
+  /** 1–20 lines, one per product (and size). */
   items: PreOrderItem[];
   /** The Sales Tracker entry made when the order was completed. */
   salesEntryId?: string;
@@ -44,6 +45,8 @@ export interface PreOrder {
 
 export interface CreatePreOrderItemInput {
   productId: string;
+  /** The size's name; required for a product with sizes, refused for one without. */
+  variant?: string;
   quantity: number;
 }
 

@@ -54,6 +54,25 @@ describe("menu, products and categories routes", () => {
     ["imageUrl", { imageUrl: "http://res.cloudinary.com/a.jpg" }],
     ["discountEndsAt", { discountEndsAt: "2026-13-01" }],
     ["discountPrice", { discountPrice: 90 }],
+    ["variants", { variants: [{ name: "Small", price: 40, isAvailable: true }] }],
+    [
+      "variants",
+      {
+        variants: [
+          { name: "Small", price: 40, isAvailable: true },
+          { name: "small", price: 50, isAvailable: true },
+        ],
+      },
+    ],
+    [
+      "variants.0.discountPrice",
+      {
+        variants: [
+          { name: "S", price: 40, discountPrice: 40, isAvailable: true },
+          { name: "L", price: 60, isAvailable: true },
+        ],
+      },
+    ],
   ])("rejects a bad product %s with field-level details", async (path, patch) => {
     const res = await request(app)
       .post("/api/v1/products")

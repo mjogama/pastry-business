@@ -18,7 +18,7 @@ import { useBag } from "./bag-provider";
 export const BagBar = () => {
   const bag = useBag();
   if (!bag || bag.count === 0) return null;
-  const total = totalOf(bag.lines.map(({ product, quantity }) => ({ price: product.finalPrice, quantity })));
+  const total = totalOf(bag.lines.map(({ unit, quantity }) => ({ price: unit.finalPrice, quantity })));
   return (
     <>
       <div aria-hidden="true" className="h-24" />

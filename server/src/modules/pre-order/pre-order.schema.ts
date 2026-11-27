@@ -58,7 +58,13 @@ export const createPreOrderSchemas = {
     pickupDate: dayKey,
     note: z.string().trim().max(300).default(""),
     items: z
-      .array(z.object({ productId: z.uuid(), quantity: z.number().int().min(1).max(MAX_QUANTITY) }))
+      .array(
+        z.object({
+          productId: z.uuid(),
+          variant: z.string().trim().min(1).max(30).exactOptional(),
+          quantity: z.number().int().min(1).max(MAX_QUANTITY),
+        }),
+      )
       .min(1, "Add at least one item")
       .max(MAX_ITEMS, `At most ${MAX_ITEMS} items`),
     website: z.string().exactOptional(),

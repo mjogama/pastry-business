@@ -4,28 +4,41 @@ import { CheckIcon, ShoppingBagIcon } from "lucide-react";
 import { useState } from "react";
 
 import { Button } from "@/components/ui/button";
-import type { ProductView } from "@/features/menu/types";
+import type { ProductView, SizeView } from "@/features/menu/types";
 import { Money } from "@/features/sales-tracker/components/ui/primitives";
 
 import { totalOf } from "../lib/days";
-import { MAX_QUANTITY, useBag } from "./bag-provider";
+import { lineKey, MAX_QUANTITY, useBag } from "./bag-provider";
 import { QuantityStepper } from "./quantity-stepper";
 
 /**
- * The product sheet's pre-order CTA: a quantity and "Add to pre-order". Renders nothing when
- * pre-orders are closed (no bag); an out-of-stock product says it can't be pre-ordered.
+ * The product sheet's pre-order CTA: a quantity and "Add to pre-order" for the product, or for the
+ * size picked in the sheet. Renders nothing when pre-orders are closed (no bag); an out-of-stock
+ * product or size says it can't be pre-ordered.
  */
-export const AddToBag = ({ product, onAdded }: { product: ProductView; onAdded?: () => void }) => {
+export const AddToBag = ({
+  product,
+  size,
+  onAdded,
+}: {
+  product: ProductView;
+  /** The picked size, for a product with sizes. */
+  size?: SizeView | undefined;
+  onAdded?: () => void;
+}) => {
   const bag = useBag();
   const [quantity, setQuantity] = useState(1);
   const [added, setAdded] = useState(false);
   if (!bag) return null;
 
-  if (!product.isAvailable) {
+  const unit = size ?? product;
+  if (!unit.isAvailable) {
     return <p className="text-label text-muted-foreground">Out of stock, so it can’t be pre-ordered right now.</p>;
   }
 
-  const inBag = bag.quantityOf(product.id);
+  const key = lineKey(product.id, size);
+  const label = size ? `${product.name} (${size.name})` : product.name;
+  const inBag = bag.quantityOf(key);
   const room = MAX_QUANTITY - inBag;
 
   if (added) {
@@ -61,13 +74,13 @@ export const AddToBag = ({ product, onAdded }: { product: ProductView; onAdded?:
             <span className="block text-label font-normal text-muted-foreground">{inBag} already in your bag</span>
           )}
         </span>
-        <QuantityStepper value={quantity} max={Math.max(1, room)} label={product.name} onChange={setQuantity} />
+        <QuantityStepper value={quantity} max={Math.max(1, room)} label={label} onChange={setQuantity} />
       </div>
       <Button
         size="call"
         disabled={room <= 0}
         onClick={() => {
-          bag.add(product.id, Math.min(quantity, room));
+          bag.add(key, Math.min(quantity, room));
           setAdded(true);
         }}
       >
@@ -77,7 +90,7 @@ export const AddToBag = ({ product, onAdded }: { product: ProductView; onAdded?:
         ) : (
           <span>
             Add to pre-order ·{" "}
-            <Money amount={totalOf([{ price: product.finalPrice, quantity: Math.min(quantity, room) }])} />
+            <Money amount={totalOf([{ price: unit.finalPrice, quantity: Math.min(quantity, room) }])} />
           </span>
         )}
       </Button>

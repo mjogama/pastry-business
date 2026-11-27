@@ -8,7 +8,8 @@ import type { ProductView } from "../types";
  * `[₱85 struck] ₱69 [Save ₱16]` on sale, otherwise `₱85` (§6). Each piece is unbreakable, so a
  * price never splits; on a narrow card the Save chip wraps to the next line as a whole.
  * `pick` is the landing page's compact card: no Save chip, 18px final price (§7.1).
- * `menu` is the menu card: large final price, then the struck price; the savings sit on the photo.
+ * `menu` is the menu card: the struck price, then the large final price on the right; the savings sit
+ * on the photo. The product sheet uses the same order.
  */
 export const PriceBlock = ({
   product,
@@ -20,6 +21,14 @@ export const PriceBlock = ({
   className?: string;
 }) => (
   <span className={cn("flex flex-wrap items-baseline gap-x-2 gap-y-1", className)}>
+    {product.isOnSale && (
+      <s
+        className={cn("whitespace-nowrap text-foreground-faint", variant === "menu" ? "text-card-title" : "text-body")}
+      >
+        <span className="sr-only">Was </span>
+        <Money amount={product.price} />
+      </s>
+    )}
     <Money
       amount={product.finalPrice}
       className={cn(
@@ -29,14 +38,6 @@ export const PriceBlock = ({
         variant === "pick" && "text-sum-sm",
       )}
     />
-    {product.isOnSale && (
-      <s
-        className={cn("whitespace-nowrap text-foreground-faint", variant === "menu" ? "text-card-title" : "text-body")}
-      >
-        <span className="sr-only">Was </span>
-        <Money amount={product.price} />
-      </s>
-    )}
     {product.isOnSale && variant === "card" && (
       <Badge variant="save" className="self-center">
         Save <Money amount={product.savings} />

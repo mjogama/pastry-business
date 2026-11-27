@@ -6,7 +6,7 @@ The owner's editor. Every page under `/cms` is drawn with the public page's own 
 | --- | --- | --- |
 | `/cms` | Redirects to `/cms/menu` | |
 | `/cms/landing` | The Landing hero and Today's picks | Add to, remove from and edit picks (products) |
-| `/cms/menu` | The Menu page: categories and product cards | Add, edit, archive, delete products; availability switch; filters and search |
+| `/cms/menu` | The Menu page: categories and product cards | Add, edit, archive, delete products; optional sizes; availability switch (on a product with sizes it sets every size); filters and search |
 | `/cms/pre-orders` | Pre-orders from `/menu` (`docs/architecture/pre-orders.md`) | Open/close pre-orders; bake list per day; confirm, hand over, cancel, delete |
 | `/cms/recipes` | The Recipe Book, unchanged | Its own add, edit, delete |
 | `/cms/sales-tracker` | The Sales Tracker, unchanged | Its own add, edit, delete |
@@ -27,7 +27,7 @@ The owner's editor. Every page under `/cms` is drawn with the public page's own 
 | CMS pages in the sidebar (each row also has an arrow link to the public page it edits: `live`) | `PAGES` in `features/admin/components/admin-shell.tsx` |
 | Menu list, filters, card controls | `features/admin/components/admin-menu.tsx` |
 | Landing picks controls | `features/admin/components/admin-landing.tsx` |
-| Product form and its checks | `features/admin/components/product-form-dialog.tsx` (the server's rules in `server/src/modules/products` are final) |
+| Product form and its checks, Sizes section (`SizesEditor`) | `features/admin/components/product-form-dialog.tsx` (the server's rules in `server/src/modules/products` are final) |
 | Save, delete, cache refresh | `features/admin/components/use-products.tsx`, `features/admin/actions.ts` |
 | API calls | `features/admin/api.ts` |
 

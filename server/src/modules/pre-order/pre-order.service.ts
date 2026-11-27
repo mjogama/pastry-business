@@ -123,21 +123,40 @@ export class PreOrderService {
     if (!isWeekday(day)) throw new BadRequestError("Pick a school day (Monday to Friday).");
   }
 
-  /** Merges repeated products and copies each one's name and price on the hand-over day. */
+  /** Merges repeated products (and sizes) and copies each one's name and price on the hand-over day. */
   private async priceItems(items: CreatePreOrderInput["items"], day: DayKey): Promise<PreOrderItem[]> {
-    const quantities = new Map<string, number>();
-    for (const { productId, quantity } of items) {
-      quantities.set(productId, (quantities.get(productId) ?? 0) + quantity);
+    const lines = new Map<string, { productId: string; variant: string | undefined; quantity: number }>();
+    for (const { productId, variant, quantity } of items) {
+      const key = `${productId}\u0000${variant?.toLowerCase() ?? ""}`;
+      lines.set(key, { productId, variant, quantity: (lines.get(key)?.quantity ?? 0) + quantity });
     }
     const priced: PreOrderItem[] = [];
-    for (const [productId, quantity] of quantities) {
+    for (const { productId, variant, quantity } of lines.values()) {
       const product = await this.products.findById(productId);
       if (!product || product.isArchived) throw new BadRequestError("An item in your bag is no longer on the menu.");
-      if (!product.isAvailable) throw new BadRequestError(`${product.name} is out of stock right now.`);
-      if (quantity > 50) throw new BadRequestError(`At most 50 of ${product.name}.`);
-      priced.push({ productId, productName: product.name, price: priceOn(product, day), quantity });
+      const size = this.pickSize(product, variant);
+      const name = size ? `${product.name} (${size.name})` : product.name;
+      if (!(size ?? product).isAvailable) throw new BadRequestError(`${name} is out of stock right now.`);
+      if (quantity > 50) throw new BadRequestError(`At most 50 of ${name}.`);
+      const price = size
+        ? priceOn({ ...size, ...(product.discountEndsAt && { discountEndsAt: product.discountEndsAt }) }, day)
+        : priceOn(product, day);
+      priced.push({ productId, productName: name, price, quantity });
     }
     return priced;
+  }
+
+  /** The size asked for: required when the product has sizes, refused when it has none. */
+  private pickSize(product: Product, variant: string | undefined) {
+    const sizes = product.variants ?? [];
+    if (sizes.length === 0) {
+      if (variant !== undefined) throw new BadRequestError(`${product.name} doesn’t come in sizes.`);
+      return undefined;
+    }
+    if (variant === undefined) throw new BadRequestError(`Pick a size for ${product.name}.`);
+    const size = sizes.find((v) => v.name.toLowerCase() === variant.toLowerCase());
+    if (!size) throw new BadRequestError(`${product.name} no longer comes in ${variant}.`);
+    return size;
   }
 
   private async uniqueCode(): Promise<string> {

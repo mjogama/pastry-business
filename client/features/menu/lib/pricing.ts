@@ -1,4 +1,4 @@
-import type { DateKey, Product } from "../types";
+import type { DateKey, PriceView, Product, SizeView } from "../types";
 
 /** Every menu date is a calendar day in Manila (§3), whatever the server's or device's zone. */
 export const TIME_ZONE = "Asia/Manila";
@@ -40,3 +40,38 @@ const endsFormat = new Intl.DateTimeFormat("en-US", { timeZone: "UTC", month: "s
 /** `Sale ends Nov 30`, or `Limited time` with no end date (§7.4). */
 export const saleEndsText = (endsAt: DateKey | undefined): string =>
   endsAt ? `Sale ends ${endsFormat.format(new Date(`${endsAt}T00:00:00Z`))}` : "Limited time";
+
+const priceView = (priced: Priced, today: DateKey): PriceView => {
+  const onSale = isOnSale(priced, today);
+  return {
+    price: priced.price,
+    isOnSale: onSale,
+    finalPrice: finalPrice(priced, today),
+    savings: savings(priced, today),
+    ...(onSale && priced.discountEndsAt && { discountEndsAt: priced.discountEndsAt }),
+  };
+};
+
+/** Each size priced for `today`; the product's sale end date applies to every size. Empty without sizes. */
+export const sizeViews = (product: Pick<Product, "variants" | "discountEndsAt">, today: DateKey): SizeView[] =>
+  (product.variants ?? []).map((size) => ({
+    name: size.name,
+    isAvailable: size.isAvailable,
+    ...priceView({ ...size, ...(product.discountEndsAt && { discountEndsAt: product.discountEndsAt }) }, today),
+  }));
+
+/** The product's own price, or for one with sizes the cheapest today (an available size if any). */
+export const headlinePrice = (product: Product, sizes: SizeView[], today: DateKey): PriceView => {
+  if (sizes.length === 0) return priceView(product, today);
+  const pool = sizes.some((size) => size.isAvailable) ? sizes.filter((size) => size.isAvailable) : sizes;
+  const {
+    name: _,
+    isAvailable: __,
+    ...cheapest
+  } = pool.reduce((low, size) => (size.finalPrice < low.finalPrice ? size : low));
+  return cheapest;
+};
+
+/** On sale today: the product, or any of its sizes. */
+export const productOnSale = (product: Product, today: DateKey): boolean =>
+  product.variants?.length ? sizeViews(product, today).some((size) => size.isOnSale) : isOnSale(product, today);

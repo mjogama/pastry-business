@@ -1,15 +1,18 @@
 import { formatPeso } from "@/features/sales-tracker/lib/money";
 
 import type { Category, DateKey, MenuSection, Product, ProductView } from "../types";
-import { finalPrice, isOnSale, savings } from "./pricing";
+import { headlinePrice, productOnSale, sizeViews } from "./pricing";
 
 /** The customer-facing shape of one product on one day (§3). */
 export const toProductView = (product: Product, category: Category, today: DateKey): ProductView => {
-  const onSale = isOnSale(product, today);
-  const final = finalPrice(product, today);
-  const priceLabel = onSale
-    ? `on sale ${formatPeso(final)}, was ${formatPeso(product.price)}`
-    : formatPeso(product.price);
+  const sizes = sizeViews(product, today);
+  const headline = headlinePrice(product, sizes, today);
+  const isAvailable = sizes.length > 0 ? sizes.some((size) => size.isAvailable) : product.isAvailable;
+  const inStock = sizes.filter((size) => size.isAvailable).map((size) => size.name);
+  const price = headline.isOnSale
+    ? `on sale ${formatPeso(headline.finalPrice)}, was ${formatPeso(headline.price)}`
+    : formatPeso(headline.price);
+  const priceLabel = inStock.length > 0 ? `${price}, sizes ${inStock.join(", ")}` : price;
   return {
     id: product.id,
     name: product.name,
@@ -17,14 +20,11 @@ export const toProductView = (product: Product, category: Category, today: DateK
     shortDescription: product.shortDescription,
     description: product.description?.trim() || product.shortDescription,
     imageUrl: product.imageUrl || undefined,
-    isAvailable: product.isAvailable,
-    price: product.price,
-    isOnSale: onSale,
-    finalPrice: final,
-    savings: savings(product, today),
-    discountEndsAt: onSale ? product.discountEndsAt : undefined,
+    isAvailable,
+    ...headline,
+    sizes,
     priceLabel,
-    ariaLabel: `${product.name}, ${priceLabel}, ${product.isAvailable ? "available" : "out of stock"}`,
+    ariaLabel: `${product.name}, ${priceLabel}, ${isAvailable ? "available" : "out of stock"}`,
   };
 };
 
@@ -59,8 +59,8 @@ export const todaysPicks = (categories: Category[], products: Product[], today: 
   // Within the featured items, the ones on sale lead (as in the reference prototype).
   const featured = eligible
     .filter((product) => product.isFeatured)
-    .sort((a, b) => Number(isOnSale(b, today)) - Number(isOnSale(a, today)));
-  const onSale = eligible.filter((product) => !product.isFeatured && isOnSale(product, today));
+    .sort((a, b) => Number(productOnSale(b, today)) - Number(productOnSale(a, today)));
+  const onSale = eligible.filter((product) => !product.isFeatured && productOnSale(product, today));
   const byId = new Map(categories.map((category) => [category.id, category]));
   return [...featured, ...onSale]
     .slice(0, PICKS)

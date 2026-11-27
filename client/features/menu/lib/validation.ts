@@ -29,6 +29,16 @@ export const productSchema = z
     isFeatured: z.boolean(),
     sortOrder: z.number().int(),
     isArchived: z.boolean(),
+    variants: z
+      .array(
+        z.object({
+          name: z.string().trim().min(1).max(30),
+          price: money,
+          discountPrice: money.optional(),
+          isAvailable: z.boolean(),
+        }),
+      )
+      .optional(),
   })
   .refine((product) => product.discountPrice == null || product.discountPrice < product.price, {
     message: "Discount must be less than the price",
