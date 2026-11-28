@@ -1,0 +1,22 @@
+name: <APP>-backend
+
+# One container per environment, same image. Ports bind to 127.0.0.1 so only
+# nginx on the host can reach them. IMAGE_TAG is passed in by deploy-docker.sh.
+services:
+  <APP>-backend-production:
+    image: <IMAGE_NAME>:${IMAGE_TAG}
+    container_name: <APP>-backend-production
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:<PROD_HOST_PORT>:<APP_PORT>"
+    env_file:
+      - .env.production
+
+  <APP>-backend-staging:
+    image: <IMAGE_NAME>:${IMAGE_TAG}
+    container_name: <APP>-backend-staging
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:<STAGING_HOST_PORT>:<APP_PORT>"
+    env_file:
+      - .env.staging

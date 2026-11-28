@@ -1,0 +1,174 @@
+pipeline {
+    agent any
+
+    tools {
+        nodejs("Node 22")
+    }
+
+    environment {
+        SERVER_IP    = credentials('SERVER_IP')
+        IMAGE_NAME   = '<IMAGE_NAME>'
+        IMAGE_TAG    = "${BUILD_NUMBER}"
+        PROJECT_PATH = '<PROJECT_PATH>'
+    }
+
+    stages {
+
+        stage('Github Clone') {
+            steps {
+                checkout scmGit(
+                    branches: [[name: '*/<BRANCH>']],
+                    extensions: [],
+                    userRemoteConfigs: [[
+                        credentialsId: 'JENKINS_GITHUB_PRIVATE_KEY',
+                        url: '<REPO_SSH_URL>'
+                    ]]
+                )
+            }
+        }
+
+        stage('Install Dependencies + Build') {
+            steps {
+                dir('<BACKEND_DIR>') {
+                    sh 'npm ci'
+                    sh 'npm run build'
+                }
+            }
+        }
+
+        stage('Database Generate + Migration') {
+            steps {
+                dir('<BACKEND_DIR>') {
+                    sh 'npm run generate'
+                }
+                withCredentials([string(credentialsId: '<DATABASE_URL_CRED>', variable: 'DATABASE_URL')]) {
+                    dir('<BACKEND_DIR>') {
+                        sh 'npm run migrate'
+                    }
+                }
+            }
+        }
+
+        stage('Database Seed') {
+            steps {
+                withCredentials([string(credentialsId: '<DATABASE_URL_CRED>', variable: 'DATABASE_URL')]) {
+                    dir('<BACKEND_DIR>') {
+                        sh 'npm run seed:<NAME>'
+                    }
+                }
+            }
+        }
+
+        stage('Server Testing') {
+            steps {
+                dir('<BACKEND_DIR>') {
+                    sh 'npm run test'
+                }
+            }
+        }
+
+        stage('Copy Docker compose and Nginx') {
+            steps {
+                withCredentials([sshUserPrivateKey(
+                    credentialsId: 'UBUNTU_SERVER_SSH_KEY',
+                    keyFileVariable: 'UBUNTU_SSH_KEY',
+                    usernameVariable: 'UBUNTU_USERNAME'
+                )]) {
+                    sh '''
+                        # Everything lives under the project folder so it never
+                        # collides with another project's deploy-docker.sh.
+                        ssh -i "$UBUNTU_SSH_KEY" \
+                            "$UBUNTU_USERNAME@$SERVER_IP" \
+                            "mkdir -p $PROJECT_PATH/scripts $PROJECT_PATH/temp"
+
+                        scp -i "$UBUNTU_SSH_KEY" \
+                            ./<BACKEND_DIR>/server/scripts/deploy-docker.sh \
+                            "$UBUNTU_USERNAME@$SERVER_IP:$PROJECT_PATH/scripts/"
+
+                        ssh -i "$UBUNTU_SSH_KEY" \
+                            "$UBUNTU_USERNAME@$SERVER_IP" \
+                            "chmod +x $PROJECT_PATH/scripts/deploy-docker.sh"
+
+                        scp -i "$UBUNTU_SSH_KEY" \
+                            ./<BACKEND_DIR>/server/docker/docker-compose.yml \
+                            "$UBUNTU_USERNAME@$SERVER_IP:$PROJECT_PATH"
+
+                        scp -i "$UBUNTU_SSH_KEY" \
+                            ./<BACKEND_DIR>/server/nginx/<APP>-prod.conf \
+                            ./<BACKEND_DIR>/server/nginx/<APP>-staging.conf \
+                            "$UBUNTU_USERNAME@$SERVER_IP:$PROJECT_PATH/temp"
+
+                        ssh -i "$UBUNTU_SSH_KEY" \
+                            "$UBUNTU_USERNAME@$SERVER_IP" \
+                            "sudo mv $PROJECT_PATH/temp/<APP>-prod.conf /etc/nginx/sites-available/<APP>-prod && \
+                            sudo mv $PROJECT_PATH/temp/<APP>-staging.conf /etc/nginx/sites-available/<APP>-staging && \
+                            sudo ln -sfn /etc/nginx/sites-available/<APP>-prod /etc/nginx/sites-enabled/<APP>-prod && \
+                            sudo ln -sfn /etc/nginx/sites-available/<APP>-staging /etc/nginx/sites-enabled/<APP>-staging && \
+                            sudo nginx -t && \
+                            sudo systemctl reload nginx"
+                    '''
+                }
+            }
+        }
+
+        stage('Login to Docker') {
+            steps {
+                withCredentials([usernamePassword(
+                    credentialsId: 'DOCKER_HUB_CREDS',
+                    passwordVariable: 'DOCKER_PSW',
+                    usernameVariable: 'DOCKER_USR'
+                )]) {
+                    sh 'echo "$DOCKER_PSW" | docker login -u "$DOCKER_USR" --password-stdin'
+                }
+            }
+        }
+
+        stage('Docker Build + Push') {
+            steps {
+                dir('<BACKEND_DIR>') {
+                    sh '''
+                        docker build -t $IMAGE_NAME:$IMAGE_TAG .
+                        docker push $IMAGE_NAME:$IMAGE_TAG
+                    '''
+                }
+            }
+        }
+
+        stage('Nginx revalidate') {
+            steps {
+                withCredentials([sshUserPrivateKey(
+                    credentialsId: 'UBUNTU_SERVER_SSH_KEY',
+                    keyFileVariable: 'UBUNTU_SSH_KEY',
+                    usernameVariable: 'UBUNTU_USERNAME'
+                )]) {
+                    sh '''
+                        ssh -i "$UBUNTU_SSH_KEY" "$UBUNTU_USERNAME@$SERVER_IP" \
+                            "sudo nginx -t && sudo systemctl reload nginx"
+                    '''
+                }
+            }
+        }
+
+        stage('SSH To Server + Docker Pull') {
+            steps {
+                withCredentials([sshUserPrivateKey(
+                    credentialsId: 'UBUNTU_SERVER_SSH_KEY',
+                    keyFileVariable: 'UBUNTU_SSH_KEY',
+                    usernameVariable: 'UBUNTU_USERNAME'
+                )]) {
+                    sh '''
+                        ssh -i "$UBUNTU_SSH_KEY" "$UBUNTU_USERNAME@$SERVER_IP" \
+                            "IMAGE_TAG=$IMAGE_TAG $PROJECT_PATH/scripts/deploy-docker.sh"
+                    '''
+                }
+            }
+        }
+    }
+
+    post {
+        always  { echo '===== Pipeline Finished ====='; sh 'docker logout' }
+        success { echo '===== Pipeline Successful =====' }
+        failure { echo '===== Pipeline Failed =====' }
+        cleanup { echo '===== Cleaning Jenkins Workspace ====='; deleteDir() }
+    }
+}

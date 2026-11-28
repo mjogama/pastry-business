@@ -1,0 +1,22 @@
+name: pato-business-backend
+
+# One container per environment, same image. Ports bind to 127.0.0.1 so only
+# nginx on the host can reach them. IMAGE_TAG is passed in by deploy-docker.sh.
+services:
+  pato-business-backend-production:
+    image: mjogama/pato-business:${IMAGE_TAG}
+    container_name: pato-business-backend-production
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:3050:8001"
+    env_file:
+      - .env.production
+
+  pato-business-backend-staging:
+    image: mjogama/pato-business:${IMAGE_TAG}
+    container_name: pato-business-backend-staging
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:3051:8001"
+    env_file:
+      - .env.staging
